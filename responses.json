@@ -1,0 +1,4 @@
+module.exports = {
+    "sa": "Aleykümselam Efendi!",
+    "selamün aleyküm": "Aleykümselam Efendi!",
+};
