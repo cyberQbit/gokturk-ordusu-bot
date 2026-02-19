@@ -18,6 +18,6 @@ Eğer bu botta veya kodlarda bir güvenlik açığı (token sızıntısı riski,
 
 **Nasıl Bildirilir?**
 1. Eğer sorun genel bir kod hatasıysa, bu depoda (repository) yeni bir **Issue** açarak bildirebilirsiniz.
-2. Eğer sorun *kritik bir güvenlik açığıysa* (herkese açık olarak paylaşılması tehlikeliyse), lütfen doğrudan Discord üzerinden geliştirici (`cyberQbit`) ile iletişime geçin.
+2. Eğer sorun *kritik bir güvenlik açığıysa* (herkese açık olarak paylaşılması tehlikeliyse), lütfen doğrudan Discord üzerinden geliştirici (`@aydin_aydmr`) ile iletişime geçin.
 
 Bildirimleriniz en kısa sürede (genellikle 24 saat içinde) incelenecek, durum değerlendirilecek ve gerekirse hızlıca bir yama (patch) yayınlanacaktır. Projeyi daha güvenli hale getirdiğiniz için teşekkür ederiz!
