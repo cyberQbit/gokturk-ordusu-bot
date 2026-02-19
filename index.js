@@ -23,8 +23,8 @@ client.once('ready', async () => {
 
     // Durum Ayarı
     client.user.setPresence({
-        activities: [{ name: 'Karargâhı', type: ActivityType.Watching }],
-        status: 'online',
+        activities: [{ name: 'Her Cuma ve Cmrt Günü Operasyon', type: ActivityType.Playing }],
+        status: 'dnd',
     });
 
     // --- SLASH KOMUT TANIMLARI ---
