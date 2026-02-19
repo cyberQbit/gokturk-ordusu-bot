@@ -6,7 +6,8 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
     ] 
 });
 
@@ -42,7 +43,17 @@ client.once('ready', async () => {
             
         new SlashCommandBuilder()
             .setName('hakkında')
-            .setDescription('Botun teknik özelliklerini ve amacını gösterir.')
+            .setDescription('Botun teknik özelliklerini ve amacını gösterir.'),
+
+        // --- ÖZEL MESAJ KOMUTU ---
+        new SlashCommandBuilder()
+            .setName('özel_mesaj')
+            .setDescription('Belirtilen kişiye veya role özel mesaj atar.')
+            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+            .addStringOption(option => option.setName('mesaj').setDescription('Gönderilecek mesaj metni').setRequired(true))
+            .addUserOption(option => option.setName('kisi').setDescription('Sadece tek bir kişiye göndermek için').setRequired(false))
+            .addRoleOption(option => option.setName('rol').setDescription('Bir role sahip üyelere göndermek için').setRequired(false))
+            .addChannelOption(option => option.setName('kanal').setDescription('Mesajın sonuna tıklanabilir kanal ekler').setRequired(false)),
     ].map(command => command.toJSON());
 
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -95,10 +106,71 @@ client.on('interactionCreate', async interaction => {
                 { name: '📜 Sürüm', value: 'v1.3.0 - Kararlı Sürüm & Sistem Güncellemesi', inline: false }
             )
             .setTimestamp()
-            .setFooter({ text: 'Mustafa Kemal Atatürk\'ün izinde...' });
+            .setFooter({ text: 'Mustafa Kemal Atatürk\'ün izindeyiz...' });
 
         await interaction.reply({ embeds: [hakkindaEmbed] });
     }
+
+    // --- GELİŞMİŞ ÖZEL MESAJ KOMUTU ---
+    if (interaction.commandName === 'özel_mesaj') {
+        await interaction.deferReply({ ephemeral: true });
+
+        const mesaj = interaction.options.getString('mesaj').replace(/\\n/g, '\n');
+        const kisi = interaction.options.getUser('kisi');
+        const rol = interaction.options.getRole('rol');
+        const kanal = interaction.options.getChannel('kanal');
+
+        // Tıklanabilir kanalı mesaja ekle
+        let sonMesaj = mesaj;
+        if (kanal) sonMesaj += `\n\n👉 **İlgili Kanal:** <#${kanal.id}>`;
+
+        // Hata Kontrolleri
+        if (!kisi && !rol) return interaction.editReply('❌ Lütfen kime göndereceğimi seçin! (Kişi veya Rol)');
+        if (kisi && rol) return interaction.editReply('❌ Aynı anda hem kişi hem rol seçemezsiniz, sadece birini seçin.');
+
+        // 1. DURUM: SADECE KİŞİYE GÖNDERME
+        if (kisi) {
+            try {
+                await kisi.send(sonMesaj);
+                return interaction.editReply(`✅ Mesaj başarıyla ${kisi} kullanıcısına iletildi!`);
+            } catch (err) {
+                return interaction.editReply(`❌ Kullanıcının DM kutusu kapalı olduğu için mesaj iletilemedi.`);
+            }
+        }
+
+        // 2. DURUM: ROLE GÖNDERME (GÜVENLİKLİ)
+        if (rol) {
+            const sunucuUyeleri = await interaction.guild.members.fetch();
+            // Botları listeden çıkar ve sadece o role sahip olanları bul
+            const hedefUyeler = sunucuUyeleri.filter(m => m.roles.cache.has(rol.id) && !m.user.bot);
+
+            // Discord Güvenlik Sınırı (Banlanmamak için)
+            if (hedefUyeler.size > 40) {
+                return interaction.editReply(`🚨 **GÜVENLİK ENGELİ:** Seçtiğiniz rolde ${hedefUyeler.size} kişi var. Discord kuralları gereği botun banlanmaması için tek seferde en fazla 40 kişiye DM atılabilir. Lütfen duyuruyu bir kanalda yapın.`);
+            }
+
+            if (hedefUyeler.size === 0) return interaction.editReply('❌ Bu role sahip kimse bulunamadı veya herkes bot.');
+
+            await interaction.editReply(`⏳ **${hedefUyeler.size}** kişiye gönderim başlatıldı. Discord'un banlamaması için her mesaj arasına 3 saniye bekleme süresi eklendi. Lütfen bekleyin...`);
+
+            let basarili = 0;
+            let basarisiz = 0;
+
+            for (const [id, uye] of hedefUyeler) {
+                try {
+                    await uye.send(sonMesaj);
+                    basarili++;
+                } catch (e) {
+                    basarisiz++; // DM'si kapalı olanlar
+                }
+                // EN ÖNEMLİ KISIM: Botun banlanmaması için her mesajdan sonra 3 saniye bekle
+                await new Promise(resolve => setTimeout(resolve, 3000)); 
+            }
+
+            return interaction.followUp({ content: `✅ **İşlem Tamamlandı!**\n> 🟢 Başarılı: ${basarili} kişi\n> 🔴 Başarısız (DM Kapalı): ${basarisiz} kişi`, ephemeral: true });
+        }
+    }
+
 });
 
 // Otomatik Cevap Sistemi
