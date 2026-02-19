@@ -1,4 +1,5 @@
-const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST, Routes, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');require('dotenv').config();
+const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST, Routes, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+require('dotenv').config();
 const fs = require('fs');
 
 const client = new Client({ 
@@ -26,18 +27,19 @@ client.once('ready', async () => {
     });
 
     // --- SLASH KOMUT TANIMLARI ---
-const duyuruKomutu = new SlashCommandBuilder()
-    .setName('duyuru')
-    .setDescription('Belirlenen kanala emojili duyuru gönderir.')
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // SADECE YÖNETİCİLER KULLANABİLİR
-    .addChannelOption(option => option.setName('kanal').setDescription('Duyurunun gideceği kanal').setRequired(true))
-    .addStringOption(option => option.setName('mesaj').setDescription('Gönderilecek duyuru metni').setRequired(true))
-    .addStringOption(option => option.setName('tepki1').setDescription('Eklenecek 1. emoji'))
-    .addStringOption(option => option.setName('tepki2').setDescription('Eklenecek 2. emoji'))
-    .addStringOption(option => option.setName('tepki3').setDescription('Eklenecek 3. emoji'))
-    .addStringOption(option => option.setName('tepki4').setDescription('Eklenecek 4. emoji'))
-    .addStringOption(option => option.setName('tepki5').setDescription('Eklenecek 5. emoji'));
-    
+    const commands = [
+        new SlashCommandBuilder()
+            .setName('duyuru')
+            .setDescription('Belirlenen kanala emojili duyuru gönderir.')
+            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // SADECE YÖNETİCİLER KULLANABİLİR
+            .addChannelOption(option => option.setName('kanal').setDescription('Duyurunun gideceği kanal').setRequired(true))
+            .addStringOption(option => option.setName('mesaj').setDescription('Gönderilecek duyuru metni').setRequired(true))
+            .addStringOption(option => option.setName('tepki1').setDescription('Eklenecek 1. emoji'))
+            .addStringOption(option => option.setName('tepki2').setDescription('Eklenecek 2. emoji'))
+            .addStringOption(option => option.setName('tepki3').setDescription('Eklenecek 3. emoji'))
+            .addStringOption(option => option.setName('tepki4').setDescription('Eklenecek 4. emoji'))
+            .addStringOption(option => option.setName('tepki5').setDescription('Eklenecek 5. emoji')),
+            
         new SlashCommandBuilder()
             .setName('hakkında')
             .setDescription('Botun teknik özelliklerini ve amacını gösterir.')
