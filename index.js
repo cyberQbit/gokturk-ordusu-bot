@@ -13,9 +13,9 @@ const client = new Client({
 
 // Özel cevaplar listesi
 const responses = {
-    "sa": "Aleykümselam Efendi!",
-    "selamün aleyküm": "Aleykümselam Efendi!",
-    "nasılsın": "İyiyim Efendi, sizleri sormalı?",
+    "sa": "Aleykümselam, Karargâha hoş geldin!",
+    "selamün aleyküm": "Aleykümselam, Karargâha hoş geldin!",
+    "nasılsın": "Görevimin başındayım, sizleri sormalı?",
 };
 
 client.once('ready', async () => {
@@ -23,7 +23,7 @@ client.once('ready', async () => {
 
     // Durum Ayarı
     client.user.setPresence({
-        activities: [{ name: 'Göktürk Ordusu\'nu', type: ActivityType.Watching }],
+        activities: [{ name: 'Karargâhı', type: ActivityType.Watching }],
         status: 'online',
     });
 
@@ -97,16 +97,16 @@ client.on('interactionCreate', async interaction => {
     // --- HAKKINDA KOMUTU ---
     if (interaction.commandName === 'hakkında') {
         const hakkindaEmbed = new EmbedBuilder()
-            .setColor(0xFFD700)
-            .setTitle('🏛️ MKA Bot Bilgi Paneli')
-            .setDescription('Ebedi Başkomutan Mustafa Kemal ATATÜRK!')
+            .setColor(0x0099FF) // Rengi sarıdan Göktürk mavisine çektik
+            .setTitle('🐺 Göktürk Ordusu Yönetim Sistemi')
+            .setDescription('Göktürk Ordusu Discord sunucusunun resmi asistanı ve moderasyon botu.')
             .addFields(
                 { name: '🛠️ Geliştirici', value: 'cyberQbit', inline: true },
                 { name: '📡 Durum', value: '7/24 Aktif (Railway)', inline: true },
-                { name: '📜 Sürüm', value: 'v1.3.0 - Kararlı Sürüm & Sistem Güncellemesi', inline: false }
+                { name: '📜 Sürüm', value: 'v2.0.0 - Yeniden Yapılanma', inline: false }
             )
             .setTimestamp()
-            .setFooter({ text: 'Mustafa Kemal Atatürk\'ün izindeyiz...' });
+            .setFooter({ text: 'Göktürk Ordusu Komuta Kademesi' });
 
         await interaction.reply({ embeds: [hakkindaEmbed] });
     }
@@ -192,9 +192,9 @@ client.on('guildMemberAdd', member => {
     if (!kanal) return;
 
     const hosgeldinEmbed = new EmbedBuilder()
-        .setColor(0x00FF00)
-        .setTitle('🎉 Yeni Bir Nefer Katıldı!')
-        .setDescription(`Hoş geldin ${member}! Seninle birlikte daha güçlüyüz.`)
+        .setColor(0x0099FF) // Göktürk Mavisi
+        .setTitle('🐺 Karargâha Yeni Bir Kan Katıldı!')
+        .setDescription(`Hoş geldin ${member}! Göktürk Ordusu saflarına katıldığın için gururluyuz. Kuralları okumayı unutma!`)
         .setThumbnail(member.user.displayAvatarURL());
 
     kanal.send({ embeds: [hosgeldinEmbed] });
