@@ -62,7 +62,7 @@ client.on('interactionCreate', async interaction => {
     // --- DUYURU KOMUTU ---
     if (interaction.commandName === 'duyuru') {
         const kanal = interaction.options.getChannel('kanal');
-        const mesaj = interaction.options.getString('mesaj');
+        const mesaj = interaction.options.getString('mesaj').replace(/\\n/g, '\n');
         const tepkiler = [
             interaction.options.getString('tepki1'),
             interaction.options.getString('tepki2'),
