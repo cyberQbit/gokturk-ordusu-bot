@@ -87,11 +87,11 @@ client.on('interactionCreate', async interaction => {
         const hakkindaEmbed = new EmbedBuilder()
             .setColor(0xFFD700)
             .setTitle('🏛️ MKA Bot Bilgi Paneli')
-            .setDescription('Efendi\'nin emirleri doğrultusunda sunucu düzenini sağlar.')
+            .setDescription('Ebedi Başkomutan Mustafa Kemal ATATÜRK!')
             .addFields(
                 { name: '🛠️ Geliştirici', value: 'cyberQbit', inline: true },
                 { name: '📡 Durum', value: '7/24 Aktif (Railway)', inline: true },
-                { name: '📜 Sürüm', value: 'v1.2.0 - Slash Command Support', inline: false }
+                { name: '📜 Sürüm', value: 'v1.3.0 - Kararlı Sürüm & Sistem Güncellemesi', inline: false }
             )
             .setTimestamp()
             .setFooter({ text: 'Mustafa Kemal Atatürk\'ün izinde...' });
