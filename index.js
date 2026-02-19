@@ -1,9 +1,7 @@
-// Gerekli araçları discord.js kütüphanesinden çekiyoruz
-const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST, Routes, SlashCommandBuilder } = require('discord.js');
 require('dotenv').config();
 const fs = require('fs');
 
-// Botun kimlik ve yetki ayarları
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds,
@@ -19,66 +17,74 @@ const responses = {
     "nasılsın": "İyiyim Efendi, sizleri sormalı?",
 };
 
-client.commands = new Collection();
-
-// 'commands' klasörü varsa içindeki komut dosyalarını yükle
-if (fs.existsSync('./commands')) {
-    const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-    for (const file of commandFiles) {
-        const command = require(`./commands/${file}`);
-        client.commands.set(command.name, command);
-    }
-}
-
-// Bot açıldığında yapılacak işlemler
-client.once('ready', () => {
+client.once('ready', async () => {
     console.log(`✅ Giriş yapıldı: ${client.user.tag}`);
 
-    // Botun durumu (Online ve Dinliyor)
+    // Durum Ayarı
     client.user.setPresence({
-        activities: [{ 
-            name: 'Göktürk Ordusu\'nu', 
-            type: ActivityType.Watching 
-        }],
+        activities: [{ name: 'Göktürk Ordusu\'nu', type: ActivityType.Watching }],
         status: 'online',
     });
 
-    console.log(`🚀 Durum ayarlandı ve bot hazır!`);
+    // SLASH COMMAND KAYIT İŞLEMİ
+    const commands = [
+        new SlashCommandBuilder()
+            .setName('duyuru')
+            .setDescription('Belirlenen kanala emojili duyuru gönderir.')
+            .addChannelOption(option => option.setName('kanal').setDescription('Duyuru kanalı').setRequired(true))
+            .addStringOption(option => option.setName('mesaj').setDescription('Duyuru metni').setRequired(true))
+            .addStringOption(option => option.setName('tepki1').setDescription('1. Emoji (Opsiyonel)'))
+            .addStringOption(option => option.setName('tepki2').setDescription('2. Emoji (Opsiyonel)'))
+            .addStringOption(option => option.setName('tepki3').setDescription('3. Emoji (Opsiyonel)'))
+            .addStringOption(option => option.setName('tepki4').setDescription('4. Emoji (Opsiyonel)'))
+            .addStringOption(option => option.setName('tepki5').setDescription('5. Emoji (Opsiyonel)'))
+    ].map(command => command.toJSON());
+
+    const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
+
+    try {
+        console.log('🚀 Komutlar yükleniyor...');
+        await rest.put(Routes.applicationCommands(client.user.id), { body: commands });
+        console.log('✅ Komutlar başarıyla kaydedildi!');
+    } catch (error) {
+        console.error(error);
+    }
 });
 
-// Mesaj geldiğinde yapılacak işlemler
-client.on('messageCreate', async message => {
-    // Bot kendi mesajına veya başka botlara cevap vermesin
-    if (message.author.bot) return;
+// Komut ve Mesaj Dinleyici
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand()) return;
 
-    const msg = message.content.toLowerCase();
+    if (interaction.commandName === 'duyuru') {
+        const kanal = interaction.options.getChannel('kanal');
+        const mesaj = interaction.options.getString('mesaj');
+        const tepkiler = [
+            interaction.options.getString('tepki1'),
+            interaction.options.getString('tepki2'),
+            interaction.options.getString('tepki3'),
+            interaction.options.getString('tepki4'),
+            interaction.options.getString('tepki5')
+        ].filter(t => t !== null); // Boş bırakılanları temizle
 
-    // 1. ÖZEL CEVAPLAR (Embed kutusu içinde)
-    if (responses[msg]) {
-        const embed = new EmbedBuilder()
-            .setColor(0x0099FF) // Mavi renk kodu
-            .setDescription(responses[msg]);
-            
-        return message.reply({ embeds: [embed] });
-    }
-
-    // 2. KOMUT SİSTEMİ (! ile başlayanlar)
-    const prefix = '!';
-    if (!message.content.startsWith(prefix)) return;
-
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const commandName = args.shift().toLowerCase();
-
-    const command = client.commands.get(commandName);
-    if (command) {
         try {
-            await command.execute(message, args);
-        } catch (error) {
-            console.error(error);
-            message.reply('❌ Komut çalıştırılırken bir hata oluştu!');
+            const sentMessage = await kanal.send(mesaj);
+            for (const emoji of tepkiler) {
+                await sentMessage.react(emoji).catch(() => null); // Geçersiz emojide hata verme
+            }
+            await interaction.reply({ content: `✅ Duyuru ${kanal} kanalına gönderildi!`, ephemeral: true });
+        } catch (err) {
+            await interaction.reply({ content: '❌ Mesaj gönderilemedi. Yetkilerimi kontrol et!', ephemeral: true });
         }
     }
 });
 
-// Botu başlat
+client.on('messageCreate', async message => {
+    if (message.author.bot) return;
+    const msg = message.content.toLowerCase();
+    if (responses[msg]) {
+        const embed = new EmbedBuilder().setColor(0x0099FF).setDescription(responses[msg]);
+        return message.reply({ embeds: [embed] });
+    }
+});
+
 client.login(process.env.TOKEN);
