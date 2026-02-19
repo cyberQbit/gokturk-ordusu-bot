@@ -37,7 +37,11 @@ client.once('ready', async () => {
             .addStringOption(option => option.setName('tepki2').setDescription('2. Emoji (Opsiyonel)'))
             .addStringOption(option => option.setName('tepki3').setDescription('3. Emoji (Opsiyonel)'))
             .addStringOption(option => option.setName('tepki4').setDescription('4. Emoji (Opsiyonel)'))
-            .addStringOption(option => option.setName('tepki5').setDescription('5. Emoji (Opsiyonel)'))
+            .addStringOption(option => option.setName('tepki5').setDescription('5. Emoji (Opsiyonel)')),
+        
+        new SlashCommandBuilder()
+            .setName('hakkında')
+            .setDescription('Botun teknik özelliklerini ve amacını gösterir.')
     ].map(command => command.toJSON());
 
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -55,6 +59,7 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
+    // --- DUYURU KOMUTU ---
     if (interaction.commandName === 'duyuru') {
         const kanal = interaction.options.getChannel('kanal');
         const mesaj = interaction.options.getString('mesaj');
@@ -64,27 +69,62 @@ client.on('interactionCreate', async interaction => {
             interaction.options.getString('tepki3'),
             interaction.options.getString('tepki4'),
             interaction.options.getString('tepki5')
-        ].filter(t => t !== null); // Boş bırakılanları temizle
+        ].filter(t => t !== null);
 
         try {
             const sentMessage = await kanal.send(mesaj);
             for (const emoji of tepkiler) {
-                await sentMessage.react(emoji).catch(() => null); // Geçersiz emojide hata verme
+                await sentMessage.react(emoji).catch(() => null);
             }
             await interaction.reply({ content: `✅ Duyuru ${kanal} kanalına gönderildi!`, ephemeral: true });
         } catch (err) {
             await interaction.reply({ content: '❌ Mesaj gönderilemedi. Yetkilerimi kontrol et!', ephemeral: true });
         }
     }
+
+    // --- HAKKINDA KOMUTU ---
+    if (interaction.commandName === 'hakkında') {
+        const hakkindaEmbed = new EmbedBuilder()
+            .setColor(0xFFD700)
+            .setTitle('🏛️ MKA Bot Bilgi Paneli')
+            .setDescription('Efendi\'nin emirleri doğrultusunda sunucu düzenini sağlar.')
+            .addFields(
+                { name: '🛠️ Geliştirici', value: 'cyberQbit', inline: true },
+                { name: '📡 Durum', value: '7/24 Aktif (Railway)', inline: true },
+                { name: '📜 Sürüm', value: 'v1.2.0 - Slash Command Support', inline: false }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Mustafa Kemal Atatürk\'ün izinde...' });
+
+        await interaction.reply({ embeds: [hakkindaEmbed] });
+    }
 });
 
+// Otomatik Cevap Sistemi
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
     const msg = message.content.toLowerCase();
+    
     if (responses[msg]) {
-        const embed = new EmbedBuilder().setColor(0x0099FF).setDescription(responses[msg]);
+        const embed = new EmbedBuilder()
+            .setColor(0x0099FF)
+            .setDescription(responses[msg]);
         return message.reply({ embeds: [embed] });
     }
+});
+
+// Yeni biri katıldığında
+client.on('guildMemberAdd', member => {
+    const kanal = member.guild.channels.cache.find(ch => ch.name === 'gelen-giden'); 
+    if (!kanal) return;
+
+    const hosgeldinEmbed = new EmbedBuilder()
+        .setColor(0x00FF00)
+        .setTitle('🎉 Yeni Bir Nefer Katıldı!')
+        .setDescription(`Hoş geldin ${member}! Seninle birlikte daha güçlüyüz.`)
+        .setThumbnail(member.user.displayAvatarURL());
+
+    kanal.send({ embeds: [hosgeldinEmbed] });
 });
 
 client.login(process.env.TOKEN);
