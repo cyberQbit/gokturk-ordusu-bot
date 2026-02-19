@@ -1,4 +1,3 @@
-```markdown
 # 🏛️ MKA Discord Bot (v1.3.0)
 
 Mustafa Kemal Atatürk'ün izinde, modern Discord sunucuları için geliştirilmiş, gelişmiş bir asistan ve moderasyon botu. Yeni nesil Discord.js altyapısı ve gelişmiş Slash (/) komutlarıyla sunucu düzenini sağlar.
@@ -29,7 +28,7 @@ Bu proje hem yerel bilgisayarınızda (Local) hem de Railway gibi bulut sistemle
    ```bash
    npm install
 
-```
+
 
 3. Klasörün ana dizininde bir `.env` dosyası oluşturun ve içine bot tokeninizi şu şekilde ekleyin:
 ```env
