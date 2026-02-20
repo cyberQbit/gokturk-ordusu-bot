@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST, Routes, SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST, Routes, SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 require('dotenv').config();
 const fs = require('fs');
 
@@ -54,6 +54,10 @@ client.once('ready', async () => {
             .addUserOption(option => option.setName('kisi').setDescription('Sadece tek bir kişiye göndermek için').setRequired(false))
             .addRoleOption(option => option.setName('rol').setDescription('Bir role sahip üyelere göndermek için').setRequired(false))
             .addChannelOption(option => option.setName('kanal').setDescription('Mesajın sonuna tıklanabilir kanal ekler').setRequired(false)),
+
+        new SlashCommandBuilder()
+            .setName('davet')
+            .setDescription('Göktürk Ordusu botunu kendi Karargâhınıza (sunucunuza) davet edin.'),
     ].map(command => command.toJSON());
 
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -109,6 +113,29 @@ client.on('interactionCreate', async interaction => {
             .setFooter({ text: 'Göktürk Ordusu Komuta Kademesi' });
 
         await interaction.reply({ embeds: [hakkindaEmbed] });
+    }
+
+    // --- DAVET KOMUTU ---
+    if (interaction.commandName === 'davet') {
+        // Bot kendi ID'sini otomatik alıp davet linkini oluşturur (Yönetici yetkisi ister)
+        const davetLinki = `https://discord.com/api/oauth2/authorize?client_id=${client.user.id}&permissions=8&scope=bot%20applications.commands`;
+
+        const davetEmbed = new EmbedBuilder()
+            .setColor(0x0099FF)
+            .setTitle('🐺 Karargâhı Genişletin!')
+            .setDescription('Göktürk Ordusu botunu kendi sunucunuza davet etmek ve gücümüze güç katmak için aşağıdaki butona tıklayın.')
+            .setThumbnail(client.user.displayAvatarURL());
+
+        const buton = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setLabel('Botu Davet Et')
+                    .setURL(davetLinki)
+                    .setStyle(ButtonStyle.Link)
+                    .setEmoji('🔗')
+            );
+
+        await interaction.reply({ embeds: [davetEmbed], components: [buton] });
     }
 
     // --- GELİŞMİŞ ÖZEL MESAJ KOMUTU ---
