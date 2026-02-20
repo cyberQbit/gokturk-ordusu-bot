@@ -36,12 +36,11 @@ client.once('ready', async () => {
         .addStringOption(option => option.setName('mesaj').setDescription('Duyuru metni (Alt satır için \\n kullanın)').setRequired(true))
         .addChannelOption(option => option.setName('kanal').setDescription('Gönderilecek kanal (Boş bırakırsanız bulunduğunuz kanala atar)').setRequired(false))
         .addStringOption(option => option.setName('zaman').setDescription('Saat (Örn: 19:30). Boş bırakırsanız anında gönderir.').setRequired(false))
-        .addStringOption(option => option.setName('mesaj').setDescription('Gönderilecek duyuru metni').setRequired(true))
-        .addStringOption(option => option.setName('tepki1').setDescription('Eklenecek 1. emoji'))
-        .addStringOption(option => option.setName('tepki2').setDescription('Eklenecek 2. emoji'))
-        .addStringOption(option => option.setName('tepki3').setDescription('Eklenecek 3. emoji'))
-        .addStringOption(option => option.setName('tepki4').setDescription('Eklenecek 4. emoji'))
-        .addStringOption(option => option.setName('tepki5').setDescription('Eklenecek 5. emoji')),
+        .addStringOption(option => option.setName('tepki1').setDescription('Eklenecek 1. emoji (Opsiyonel)').setRequired(false))
+        .addStringOption(option => option.setName('tepki2').setDescription('Eklenecek 2. emoji (Opsiyonel)').setRequired(false))
+        .addStringOption(option => option.setName('tepki3').setDescription('Eklenecek 3. emoji (Opsiyonel)').setRequired(false))
+        .addStringOption(option => option.setName('tepki4').setDescription('Eklenecek 4. emoji (Opsiyonel)').setRequired(false))
+        .addStringOption(option => option.setName('tepki5').setDescription('Eklenecek 5. emoji (Opsiyonel)').setRequired(false)),
               
         new SlashCommandBuilder()
             .setName('hakkında')
@@ -77,49 +76,65 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    // --- GELİŞMİŞ VE ZAMANLANABİLİR DUYURU KOMUTU ---
+    // --- GELİŞMİŞ, ZAMANLANABİLİR VE TEPKİLİ DUYURU KOMUTU ---
     if (interaction.commandName === 'duyuru') {
         const mesaj = interaction.options.getString('mesaj').replace(/\\n/g, '\n');
         const kanal = interaction.options.getChannel('kanal') || interaction.channel;
         const zaman = interaction.options.getString('zaman');
 
-        // Eğer zaman girilmediyse anında gönder
-        if (!zaman) {
-            await kanal.send({ content: mesaj });
-            return interaction.reply({ content: `✅ Duyuru anında ${kanal} kanalına gönderildi!`, ephemeral: true });
+        // Girilen tepkileri (emojileri) bir listede topla
+        const tepkiler = [];
+        for (let i = 1; i <= 5; i++) {
+            const tepki = interaction.options.getString(`tepki${i}`);
+            if (tepki) tepkiler.push(tepki);
         }
 
-        // Eğer zaman girildiyse saat ve dakikayı ayır (Örn: 19:30)
+        // Mesaja otomatik tepki ekleyen yardımcı fonksiyon
+        const emojileriEkle = async (gonderilenMesaj) => {
+            for (const emoji of tepkiler) {
+                try {
+                    await gonderilenMesaj.react(emoji);
+                } catch (error) {
+                    console.error(`Emoji eklenemedi (${emoji}): Lütfen geçerli bir emoji girdiğinizden emin olun.`);
+                }
+            }
+        };
+
+        // 1. DURUM: ZAMAN GİRİLMEDİYSE ANINDA GÖNDER
+        if (!zaman) {
+            const gonderilenMesaj = await kanal.send({ content: mesaj });
+            await emojileriEkle(gonderilenMesaj); // Emojileri bas
+            return interaction.reply({ content: `✅ Duyuru anında ${kanal} kanalına gönderildi ve tepkiler eklendi!`, ephemeral: true });
+        }
+
+        // 2. DURUM: ZAMAN GİRİLDİYSE SAATİ HESAPLA
         const saatDakika = zaman.split(':');
         if (saatDakika.length !== 2 || isNaN(saatDakika[0]) || isNaN(saatDakika[1])) {
             return interaction.reply({ content: '❌ Lütfen saati doğru formatta girin! (Örn: 19:30 veya 09:15)', ephemeral: true });
         }
 
-        // Türkiye saatine göre şimdiki zamanı al
+        // Türkiye saatine göre zamanlama
         const simdi = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Istanbul"}));
         const hedefZaman = new Date(simdi);
-        
         hedefZaman.setHours(parseInt(saatDakika[0]), parseInt(saatDakika[1]), 0, 0);
 
-        // Eğer girilen saat bugünün saatinden gerideyse (örneğin şu an 20:00, adam 10:00 yazdıysa) yarına ayarla
         if (hedefZaman <= simdi) {
             hedefZaman.setDate(hedefZaman.getDate() + 1);
         }
 
-        // Aradaki farkı milisaniye cinsinden bul
         const beklemeSuresi = hedefZaman.getTime() - simdi.getTime();
-
-        // Yöneticiye onay mesajı ver
         const saatGosterimi = hedefZaman.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        
         await interaction.reply({ 
-            content: `⏳ **Komut Alındı!** Duyurunuz Türkiye saati ile **${saatGosterimi}**'da ${kanal} kanalına gönderilmek üzere zamanlandı.\n*(Not: Vakit gelmeden önce bot yeniden başlatılırsa zamanlama iptal olur.)*`, 
+            content: `⏳ **Komut Alındı!** Duyurunuz (ve tepkileri) Türkiye saati ile **${saatGosterimi}**'da ${kanal} kanalına gönderilmek üzere zamanlandı.\n*(Not: Vakit gelmeden önce bot yeniden başlatılırsa zamanlama iptal olur.)*`, 
             ephemeral: true 
         });
 
         // Zamanlayıcıyı başlat
         setTimeout(async () => {
             try {
-                await kanal.send({ content: mesaj });
+                const gonderilenMesaj = await kanal.send({ content: mesaj });
+                await emojileriEkle(gonderilenMesaj); // Emojileri bas
             } catch (err) {
                 console.error('Zamanlanmış duyuru atılamadı:', err);
             }
