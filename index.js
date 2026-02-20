@@ -35,8 +35,14 @@ client.once('ready', async () => {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addStringOption(option => option.setName('mesaj').setDescription('Duyuru metni (Alt satır için \\n kullanın)').setRequired(true))
         .addChannelOption(option => option.setName('kanal').setDescription('Gönderilecek kanal (Boş bırakırsanız bulunduğunuz kanala atar)').setRequired(false))
-        .addStringOption(option => option.setName('zaman').setDescription('Saat (Örn: 19:30). Boş bırakırsanız anında gönderir.').setRequired(false)),
-            
+        .addStringOption(option => option.setName('zaman').setDescription('Saat (Örn: 19:30). Boş bırakırsanız anında gönderir.').setRequired(false))
+        .addStringOption(option => option.setName('mesaj').setDescription('Gönderilecek duyuru metni').setRequired(true))
+        .addStringOption(option => option.setName('tepki1').setDescription('Eklenecek 1. emoji'))
+        .addStringOption(option => option.setName('tepki2').setDescription('Eklenecek 2. emoji'))
+        .addStringOption(option => option.setName('tepki3').setDescription('Eklenecek 3. emoji'))
+        .addStringOption(option => option.setName('tepki4').setDescription('Eklenecek 4. emoji'))
+        .addStringOption(option => option.setName('tepki5').setDescription('Eklenecek 5. emoji')),
+              
         new SlashCommandBuilder()
             .setName('hakkında')
             .setDescription('Botun teknik özelliklerini ve amacını gösterir.'),
