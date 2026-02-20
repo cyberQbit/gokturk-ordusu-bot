@@ -1,4 +1,4 @@
-# 🏛️ Göktürk Ordusu Discord Botu (v1.3.0)
+# 🏛️ Göktürk Ordusu Discord Botu (v2.0.0)
 
 Göktürk Ordusu sunucusu için geliştirilmiş resmi moderasyon botu olup aynı zamanda modern Discord sunucuları içinde kullanılabilecek gelişmiş bir asistan ve moderasyon yapısına sahiptir. Yeni nesil Discord.js altyapısı ve gelişmiş Slash (/) komutlarıyla sunucu düzenini sağlar.
 
