@@ -30,16 +30,12 @@ client.once('ready', async () => {
     // --- SLASH KOMUT TANIMLARI ---
     const commands = [
         new SlashCommandBuilder()
-            .setName('duyuru')
-            .setDescription('Belirlenen kanala emojili duyuru gönderir.')
-            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // SADECE YÖNETİCİLER KULLANABİLİR
-            .addChannelOption(option => option.setName('kanal').setDescription('Duyurunun gideceği kanal').setRequired(true))
-            .addStringOption(option => option.setName('mesaj').setDescription('Gönderilecek duyuru metni').setRequired(true))
-            .addStringOption(option => option.setName('tepki1').setDescription('Eklenecek 1. emoji'))
-            .addStringOption(option => option.setName('tepki2').setDescription('Eklenecek 2. emoji'))
-            .addStringOption(option => option.setName('tepki3').setDescription('Eklenecek 3. emoji'))
-            .addStringOption(option => option.setName('tepki4').setDescription('Eklenecek 4. emoji'))
-            .addStringOption(option => option.setName('tepki5').setDescription('Eklenecek 5. emoji')),
+        .setName('duyuru')
+        .setDescription('Sunucuya (veya belirtilen kanala) gelişmiş duyuru gönderir.')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+        .addStringOption(option => option.setName('mesaj').setDescription('Duyuru metni (Alt satır için \\n kullanın)').setRequired(true))
+        .addChannelOption(option => option.setName('kanal').setDescription('Gönderilecek kanal (Boş bırakırsanız bulunduğunuz kanala atar)').setRequired(false))
+        .addStringOption(option => option.setName('zaman').setDescription('Saat (Örn: 19:30). Boş bırakırsanız anında gönderir.').setRequired(false)),
             
         new SlashCommandBuilder()
             .setName('hakkında')
@@ -75,27 +71,53 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    // --- DUYURU KOMUTU ---
+    // --- GELİŞMİŞ VE ZAMANLANABİLİR DUYURU KOMUTU ---
     if (interaction.commandName === 'duyuru') {
-        const kanal = interaction.options.getChannel('kanal');
         const mesaj = interaction.options.getString('mesaj').replace(/\\n/g, '\n');
-        const tepkiler = [
-            interaction.options.getString('tepki1'),
-            interaction.options.getString('tepki2'),
-            interaction.options.getString('tepki3'),
-            interaction.options.getString('tepki4'),
-            interaction.options.getString('tepki5')
-        ].filter(t => t !== null);
+        const kanal = interaction.options.getChannel('kanal') || interaction.channel;
+        const zaman = interaction.options.getString('zaman');
 
-        try {
-            const sentMessage = await kanal.send(mesaj);
-            for (const emoji of tepkiler) {
-                await sentMessage.react(emoji).catch(() => null);
-            }
-            await interaction.reply({ content: `✅ Duyuru ${kanal} kanalına gönderildi!`, ephemeral: true });
-        } catch (err) {
-            await interaction.reply({ content: '❌ Mesaj gönderilemedi. Yetkilerimi kontrol et!', ephemeral: true });
+        // Eğer zaman girilmediyse anında gönder
+        if (!zaman) {
+            await kanal.send({ content: mesaj });
+            return interaction.reply({ content: `✅ Duyuru anında ${kanal} kanalına gönderildi!`, ephemeral: true });
         }
+
+        // Eğer zaman girildiyse saat ve dakikayı ayır (Örn: 19:30)
+        const saatDakika = zaman.split(':');
+        if (saatDakika.length !== 2 || isNaN(saatDakika[0]) || isNaN(saatDakika[1])) {
+            return interaction.reply({ content: '❌ Lütfen saati doğru formatta girin! (Örn: 19:30 veya 09:15)', ephemeral: true });
+        }
+
+        // Türkiye saatine göre şimdiki zamanı al
+        const simdi = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Istanbul"}));
+        const hedefZaman = new Date(simdi);
+        
+        hedefZaman.setHours(parseInt(saatDakika[0]), parseInt(saatDakika[1]), 0, 0);
+
+        // Eğer girilen saat bugünün saatinden gerideyse (örneğin şu an 20:00, adam 10:00 yazdıysa) yarına ayarla
+        if (hedefZaman <= simdi) {
+            hedefZaman.setDate(hedefZaman.getDate() + 1);
+        }
+
+        // Aradaki farkı milisaniye cinsinden bul
+        const beklemeSuresi = hedefZaman.getTime() - simdi.getTime();
+
+        // Yöneticiye onay mesajı ver
+        const saatGosterimi = hedefZaman.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        await interaction.reply({ 
+            content: `⏳ **Komut Alındı!** Duyurunuz Türkiye saati ile **${saatGosterimi}**'da ${kanal} kanalına gönderilmek üzere zamanlandı.\n*(Not: Vakit gelmeden önce bot yeniden başlatılırsa zamanlama iptal olur.)*`, 
+            ephemeral: true 
+        });
+
+        // Zamanlayıcıyı başlat
+        setTimeout(async () => {
+            try {
+                await kanal.send({ content: mesaj });
+            } catch (err) {
+                console.error('Zamanlanmış duyuru atılamadı:', err);
+            }
+        }, beklemeSuresi);
     }
 
     // --- HAKKINDA KOMUTU ---
