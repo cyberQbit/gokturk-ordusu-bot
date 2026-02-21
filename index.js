@@ -78,6 +78,9 @@ client.on('interactionCreate', async interaction => {
 
     // --- GELİŞMİŞ, ZAMANLANABİLİR VE TEPKİLİ DUYURU KOMUTU ---
     if (interaction.commandName === 'duyuru') {
+        // Zaman aşımını önlemek için botu "Düşünüyor..." moduna alıyoruz
+        await interaction.deferReply({ ephemeral: true });
+
         const mesaj = interaction.options.getString('mesaj').replace(/\\n/g, '\n');
         const kanal = interaction.options.getChannel('kanal') || interaction.channel;
         const zaman = interaction.options.getString('zaman');
@@ -94,26 +97,39 @@ client.on('interactionCreate', async interaction => {
             for (const emoji of tepkiler) {
                 try {
                     await gonderilenMesaj.react(emoji);
-                } catch (error) {
-                    console.error(`Emoji eklenemedi (${emoji}): Lütfen geçerli bir emoji girdiğinizden emin olun.`);
-                }
+                } catch (error) {}
             }
         };
 
+        // Discord'un 2000 karakter sınırını aşmak için Akıllı Embed kontrolü
+        let gonderilecekVeri;
+        if (mesaj.length > 1900) {
+            const embed = new EmbedBuilder()
+                .setColor(0x0099FF)
+                .setDescription(mesaj);
+            gonderilecekVeri = { embeds: [embed] };
+        } else {
+            gonderilecekVeri = { content: mesaj };
+        }
+
         // 1. DURUM: ZAMAN GİRİLMEDİYSE ANINDA GÖNDER
         if (!zaman) {
-            const gonderilenMesaj = await kanal.send({ content: mesaj });
-            await emojileriEkle(gonderilenMesaj); // Emojileri bas
-            return interaction.reply({ content: `✅ Duyuru anında ${kanal} kanalına gönderildi ve tepkiler eklendi!`, ephemeral: true });
+            try {
+                const gonderilenMesaj = await kanal.send(gonderilecekVeri);
+                await emojileriEkle(gonderilenMesaj);
+                return interaction.editReply({ content: `✅ Duyuru başarıyla ${kanal} kanalına gönderildi!` });
+            } catch (err) {
+                console.error(err);
+                return interaction.editReply({ content: '❌ Mesaj gönderilemedi. Bota yetki vermemiş olabilirsiniz.' });
+            }
         }
 
         // 2. DURUM: ZAMAN GİRİLDİYSE SAATİ HESAPLA
         const saatDakika = zaman.split(':');
         if (saatDakika.length !== 2 || isNaN(saatDakika[0]) || isNaN(saatDakika[1])) {
-            return interaction.reply({ content: '❌ Lütfen saati doğru formatta girin! (Örn: 19:30 veya 09:15)', ephemeral: true });
+            return interaction.editReply({ content: '❌ Lütfen saati doğru formatta girin! (Örn: 19:30)' });
         }
 
-        // Türkiye saatine göre zamanlama
         const simdi = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Istanbul"}));
         const hedefZaman = new Date(simdi);
         hedefZaman.setHours(parseInt(saatDakika[0]), parseInt(saatDakika[1]), 0, 0);
@@ -125,16 +141,12 @@ client.on('interactionCreate', async interaction => {
         const beklemeSuresi = hedefZaman.getTime() - simdi.getTime();
         const saatGosterimi = hedefZaman.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
         
-        await interaction.reply({ 
-            content: `⏳ **Komut Alındı!** Duyurunuz (ve tepkileri) Türkiye saati ile **${saatGosterimi}**'da ${kanal} kanalına gönderilmek üzere zamanlandı.\n*(Not: Vakit gelmeden önce bot yeniden başlatılırsa zamanlama iptal olur.)*`, 
-            ephemeral: true 
-        });
+        await interaction.editReply({ content: `⏳ **Komut Alındı!** Duyurunuz Türkiye saati ile **${saatGosterimi}**'da ${kanal} kanalına gönderilmek üzere zamanlandı.` });
 
-        // Zamanlayıcıyı başlat
         setTimeout(async () => {
             try {
-                const gonderilenMesaj = await kanal.send({ content: mesaj });
-                await emojileriEkle(gonderilenMesaj); // Emojileri bas
+                const gonderilenMesaj = await kanal.send(gonderilecekVeri);
+                await emojileriEkle(gonderilenMesaj);
             } catch (err) {
                 console.error('Zamanlanmış duyuru atılamadı:', err);
             }
