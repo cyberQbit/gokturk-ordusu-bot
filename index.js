@@ -36,6 +36,7 @@ client.once('ready', async () => {
         .addStringOption(option => option.setName('mesaj').setDescription('Duyuru metni (Alt satır için \\n kullanın)').setRequired(true))
         .addChannelOption(option => option.setName('kanal').setDescription('Gönderilecek kanal (Boş bırakırsanız bulunduğunuz kanala atar)').setRequired(false))
         .addStringOption(option => option.setName('zaman').setDescription('Saat (Örn: 19:30). Boş bırakırsanız anında gönderir.').setRequired(false))
+        .addBooleanOption(option => option.setName('embed_kullan').setDescription('Mesaj şık bir kutu (Embed) içinde mi gitsin?').setRequired(false))
         .addStringOption(option => option.setName('tepki1').setDescription('Eklenecek 1. emoji (Opsiyonel)').setRequired(false))
         .addStringOption(option => option.setName('tepki2').setDescription('Eklenecek 2. emoji (Opsiyonel)').setRequired(false))
         .addStringOption(option => option.setName('tepki3').setDescription('Eklenecek 3. emoji (Opsiyonel)').setRequired(false))
@@ -76,23 +77,21 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    // --- GELİŞMİŞ, ZAMANLANABİLİR VE TEPKİLİ DUYURU KOMUTU ---
+    // --- GELİŞMİŞ, ZAMANLANABİLİR, TEPKİLİ VE SEÇMELİ EMBED DUYURU KOMUTU ---
     if (interaction.commandName === 'duyuru') {
-        // Zaman aşımını önlemek için botu "Düşünüyor..." moduna alıyoruz
         await interaction.deferReply({ ephemeral: true });
 
         const mesaj = interaction.options.getString('mesaj').replace(/\\n/g, '\n');
         const kanal = interaction.options.getChannel('kanal') || interaction.channel;
         const zaman = interaction.options.getString('zaman');
+        const embedKullan = interaction.options.getBoolean('embed_kullan'); // Kullanıcının seçimi
 
-        // Girilen tepkileri (emojileri) bir listede topla
         const tepkiler = [];
         for (let i = 1; i <= 5; i++) {
             const tepki = interaction.options.getString(`tepki${i}`);
             if (tepki) tepkiler.push(tepki);
         }
 
-        // Mesaja otomatik tepki ekleyen yardımcı fonksiyon
         const emojileriEkle = async (gonderilenMesaj) => {
             for (const emoji of tepkiler) {
                 try {
@@ -101,9 +100,9 @@ client.on('interactionCreate', async interaction => {
             }
         };
 
-        // Discord'un 2000 karakter sınırını aşmak için Akıllı Embed kontrolü
+        // Kullanıcı Embed seçtiyse VEYA mesaj 1900 karakterden uzunsa (çökmeyi engellemek için) Embed yap
         let gonderilecekVeri;
-        if (mesaj.length > 1900) {
+        if (embedKullan || mesaj.length > 1900) {
             const embed = new EmbedBuilder()
                 .setColor(0x0099FF)
                 .setDescription(mesaj);
