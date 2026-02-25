@@ -184,22 +184,22 @@ client.on('interactionCreate', async interaction => {
         }, beklemeSuresi);
     }
 
-    // --- HAKKINDA KOMUTU ---
-    if (interaction.commandName === 'hakkında') {
-        const hakkindaEmbed = new EmbedBuilder()
-            .setColor(0x0099FF) // Rengi sarıdan Göktürk mavisine çektik
-            .setTitle('🐺 Göktürk Ordusu Yönetim Sistemi')
-            .setDescription('Göktürk Ordusu Discord sunucusunun resmi asistanı ve moderasyon botu.')
-            .addFields(
-                { name: '🛠️ Geliştirici', value: 'cyberQbit', inline: true },
-                { name: '📡 Durum', value: '7/24 Aktif (Railway)', inline: true },
-                { name: '📜 Sürüm', value: 'v2.0.0 - Yeniden Yapılanma', inline: false }
-            )
-            .setTimestamp()
-            .setFooter({ text: 'Göktürk Ordusu Komuta Kademesi' });
+   // --- HAKKINDA KOMUTU ---
+if (interaction.commandName === 'hakkında') {
+    const hakkindaEmbed = new EmbedBuilder()
+        .setColor(0x0099FF) // Göktürk Mavisi
+        .setTitle('🐺 Göktürk Ordusu Yönetim Sistemi')
+        .setDescription('Göktürk Ordusu Discord sunucusunun resmi asistanı ve gelişmiş moderasyon botu.\nModern Slash (/) komut altyapısı ile güvenli ve stabil hizmet sunar.')
+        .addFields(
+            { name: '🛠️ Geliştirici', value: 'cyberQbit', inline: true },
+            { name: '📡 Durum', value: '7/24 Aktif (Bulut Altyapısı)', inline: true },
+            { name: '📜 Sürüm', value: 'v2.1.0 - Stabilite & Moderasyon Güncellemesi', inline: false }
+        )
+        .setTimestamp()
+        .setFooter({ text: 'Göktürk Ordusu Komuta Kademesi • Karargâhı izliyor' });
 
-        await interaction.reply({ embeds: [hakkindaEmbed] });
-    }
+    await interaction.reply({ embeds: [hakkindaEmbed] });
+}
 
     // --- DAVET KOMUTU ---
     if (interaction.commandName === 'davet') {
