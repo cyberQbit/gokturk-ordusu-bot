@@ -1,7 +1,7 @@
 {
-  "name": "mka-discord-bot",
-  "version": "1.0.0",
-  "description": "Atatürk Temalı Profesyonel Bot",
+  "name": "gokturk-ordusu-bot",
+  "version": "2.2.0",
+  "description": "Profesyonel Moderizasyon Discord Botu",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"

@@ -2,8 +2,9 @@ const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST,
 require('dotenv').config();
 const fs = require('fs');
 
-const ozelOdalar = new Set();
-const odaTimerlar = new Map(); // channelId -> timeoutId
+const ozelOdalar = new Map(); // Hangi odayı kimin açtığını aklında tutar
+const odaTimerlar = new Map();
+const islemBekleyenler = new Set(); // Butona art arda spam basmayı engeller
 
 const http = require('http');
 http.createServer((req, res) => {
@@ -329,20 +330,45 @@ if (interaction.commandName === 'hakkında') {
         
         if (interaction.customId === 'oda_kur_buton') {
             const uye = interaction.member;
+
+            // 1. KALKAN: Spam Koruması (Butona art arda basmayı engelle)
+            if (islemBekleyenler.has(uye.id)) {
+                return interaction.reply({ content: '⏳ İşleminiz sürüyor, lütfen art arda basmayın...', ephemeral: true });
+            }
+
+            // 2. KALKAN: Tek Oda Kuralı (Zaten açık bir odası var mı?)
+            const mevcutOdasi = [...ozelOdalar.entries()].find(([kanalId, sahipId]) => sahipId === uye.id);
+            if (mevcutOdasi) {
+                return interaction.reply({ content: `❌ Karargâhta zaten size ait açık bir oda var! Lütfen önce onu kapatın: <#${mevcutOdasi[0]}>`, ephemeral: true });
+            }
+
+            // Güvenlik doğrulandı, işlemi kilitle ki ikinci kez basamasın
+            islemBekleyenler.add(uye.id);
+
             let kategoriId = interaction.channel.parentId;
             if (uye.voice.channel) kategoriId = uye.voice.channel.parentId;
 
-            const yeniOda = await interaction.guild.channels.create({
-                name: `🔊 ${uye.user.username}'in Odası`,
-                type: ChannelType.GuildVoice,
-                parent: kategoriId,
-                permissionOverwrites: [
-                    { id: interaction.guild.id, allow: [PermissionFlagsBits.Connect] },
-                    { id: uye.id, allow: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.MoveMembers, PermissionFlagsBits.MuteMembers] }
-                ]
-            });
+            // 3. KALKAN: Çökme Koruması (Discord limitleri aşılırsa botu koru)
+            let yeniOda;
+            try {
+                yeniOda = await interaction.guild.channels.create({
+                    name: `🔊 ${uye.user.username}'in Odası`,
+                    type: ChannelType.GuildVoice,
+                    parent: kategoriId,
+                    permissionOverwrites: [
+                        { id: interaction.guild.id, allow: [PermissionFlagsBits.Connect] },
+                        { id: uye.id, allow: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.MoveMembers, PermissionFlagsBits.MuteMembers] }
+                    ]
+                });
+            } catch (err) {
+                islemBekleyenler.delete(uye.id); // Hata olursa kilidi aç
+                console.error('Kanal açılamadı:', err);
+                return interaction.reply({ content: '🚨 **KARARGÂH SINIRI:** Sunucuda maksimum kanal sayısına (500) ulaşılmış olabilir veya yetkim eksik!', ephemeral: true });
+            }
 
-            ozelOdalar.add(yeniOda.id);
+            // Odayı başarıyla açtık, hafızaya adamın ID'si ile kaydet
+            ozelOdalar.set(yeniOda.id, uye.id);
+            islemBekleyenler.delete(uye.id); // Kalkan kilidini kaldır
 
             // 120 saniye içinde kimse girmezse odayı otomatik sil
             const bosOdaTimer = setTimeout(async () => {
