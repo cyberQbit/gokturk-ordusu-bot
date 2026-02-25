@@ -99,6 +99,19 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ Bu komutu kullanmak için **Yönetici** yetkisine sahip olmanız gerekiyor.', ephemeral: true });
         }
 
+        // Kanalda daha önce gönderilmiş eski panel mesajlarını sil
+        try {
+            const mesajlar = await interaction.channel.messages.fetch({ limit: 50 });
+            const eskiPaneller = mesajlar.filter(m =>
+                m.author.id === client.user.id &&
+                m.components.length > 0 &&
+                m.components[0].components.some(c => c.customId === 'oda_kur_buton')
+            );
+            for (const [, eskiMesaj] of eskiPaneller) {
+                await eskiMesaj.delete().catch(() => {});
+            }
+        } catch (e) {}
+
         const embed = new EmbedBuilder()
             .setTitle('🎧 Özel Odanı Oluştur')
             .setDescription('Aşağıdaki **Odanı Oluştur!** butonuna tıklayarak Karargâhta kendinize ait özel bir ses kanalı açabilirsiniz.\nOluşturduğunuz odanın metin sohbetine giderek odanızı yönetebilirsiniz.')
@@ -364,9 +377,15 @@ if (interaction.commandName === 'hakkında') {
         }
 
         if (['oda_kilit_kapat', 'oda_kilit_ac', 'oda_isim_degis', 'oda_limit_ayarla'].includes(interaction.customId)) {
-            const sesKanali = interaction.member.voice.channel;
-            if (!sesKanali || !ozelOdalar.has(sesKanali.id)) return interaction.reply({ content: '❌ Odada değilsiniz!', ephemeral: true });
-            if (!sesKanali.permissionsFor(interaction.member).has(PermissionFlagsBits.ManageChannels)) return interaction.reply({ content: '❌ Oda sizin değil!', ephemeral: true });
+            // Panel mesajı doğrudan ses kanalının içine gönderildiği için
+            // interaction.channel her zaman ilgili ses kanalıdır.
+            const sesKanali = interaction.channel;
+            if (!sesKanali || sesKanali.type !== ChannelType.GuildVoice) {
+                return interaction.reply({ content: '❌ Bu butonlar yalnızca ses kanalı içinde kullanılabilir.', ephemeral: true });
+            }
+            if (!sesKanali.permissionsFor(interaction.member).has(PermissionFlagsBits.ManageChannels)) {
+                return interaction.reply({ content: '❌ Bu oda size ait değil!', ephemeral: true });
+            }
 
             if (interaction.customId === 'oda_kilit_kapat') {
                 await sesKanali.permissionOverwrites.edit(interaction.guild.id, { Connect: false });
@@ -392,8 +411,11 @@ if (interaction.commandName === 'hakkında') {
     }
 
     if (interaction.isModalSubmit()) {
-        const sesKanali = interaction.member.voice.channel;
-        if (!sesKanali || !ozelOdalar.has(sesKanali.id)) return interaction.reply({ content: '❌ Odada değilsiniz!', ephemeral: true });
+        // Modal da aynı ses kanalı içinden açıldığı için interaction.channel kullan
+        const sesKanali = interaction.channel;
+        if (!sesKanali || sesKanali.type !== ChannelType.GuildVoice) {
+            return interaction.reply({ content: '❌ Bu işlem ses kanalı içinde yapılabilir.', ephemeral: true });
+        }
 
         if (interaction.customId === 'modal_isim') {
             const yeniIsim = interaction.fields.getTextInputValue('yeni_isim');
