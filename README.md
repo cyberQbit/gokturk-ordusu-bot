@@ -1,54 +1,203 @@
-# 🏛️ Göktürk Ordusu Discord Botu (v2.0.0)
+# 🏛️ Göktürk Ordusu Discord Botu (v2.1.0)
 
-Göktürk Ordusu sunucusu için geliştirilmiş resmi moderasyon botu olup aynı zamanda modern Discord sunucuları içinde kullanılabilecek gelişmiş bir asistan ve moderasyon yapısına sahiptir. Yeni nesil Discord.js altyapısı ve gelişmiş Slash (/) komutlarıyla sunucu düzenini sağlar.
+<p align="center">
+  <img src="https://img.shields.io/badge/version-2.1.0-blue.svg" />
+  <img src="https://img.shields.io/badge/node-%3E%3D16-green.svg" />
+  <img src="https://img.shields.io/badge/license-MIT-yellow.svg" />
+  <img src="https://img.shields.io/badge/discord.js-v14-5865F2.svg" />
+  <img src="https://img.shields.io/badge/status-active-success.svg" />
+</p>
 
-## 🚀 Özellikler
+---
 
-* **🛡️ Modern Slash Komutları (/)**
-  * `/duyuru`: Yalnızca yöneticilerin kullanabileceği, satır atlama (`\n`) destekli ve otomatik tepki emojili profesyonel duyuru sistemi.
-  * `/hakkında`: Botun anlık durumunu, sürümünü ve geliştirici bilgilerini gösteren şık bilgi paneli (Embed).
-* **👋 Otomatik Karşılama Sistemi:** Sunucuya yeni katılan neferleri `gelen-giden` kanalında özel, renkli ve profil fotoğraflı bir mesajla otomatik olarak karşılar.
-* **💬 Akıllı Yanıt Sistemi:** "sa", "selamün aleyküm", "nasılsın" gibi temel mesajlara anında, sunucu kültürüne uygun yanıtlar verir.
-* **☁️ 7/24 Aktif & Stabil:** Railway bulut sistemi üzerinde kesintisiz çalışacak şekilde optimize edilmiştir.
-* **👁️ Özel Durum:** "Karargah'ı izliyor" şeklinde tematik profil aktivitesi.
+## 🧠 SEO Açıklama
 
-## 🛠️ Kurulum ve Çalıştırma
+**Göktürk Ordusu Discord Botu**, Discord.js altyapısıyla geliştirilmiş, Slash (/) komut destekli, gelişmiş moderasyon, duyuru ve otomatik yanıt sistemlerine sahip profesyonel bir Discord moderasyon botudur.
 
-Bu proje hem yerel bilgisayarınızda (Local) hem de Railway gibi bulut sistemlerinde çalışmaya uygun şekilde hazırlanmıştır.
+Türkçe Discord sunucuları için optimize edilmiştir.  
+Toplu DM koruması, zamanlanabilir embed duyuru sistemi ve 7/24 bulut uyumluluğu ile modern Discord toplulukları için tasarlanmıştır.
 
-### Gereksinimler
-* [Node.js](https://nodejs.org/) yüklü bir sistem.
-* [Discord Developer Portal](https://discord.com/developers/applications)'dan alınmış bir Bot Tokeni.
-* Botun **Message Content Intent** ve **Server Members Intent** ayarlarının açık olması.
+> Anahtar Kelimeler: Discord moderasyon botu, Discord.js bot, Slash komut botu, Türkçe Discord bot, gelişmiş duyuru botu
 
-### Adımlar
+---
 
-1. Bu depoyu bilgisayarınıza klonlayın veya .zip olarak indirin.
-2. Terminali açın ve gerekli kütüphaneleri yükleyin:
-   ```bash
-   npm install
+# 🚀 Özellikler
 
+## 🛡️ Modern Slash Komutları (`/`)
 
+### `/duyuru`
+Gelişmiş ve zamanlanabilir duyuru sistemi.
 
-3. Klasörün ana dizininde bir `.env` dosyası oluşturun ve içine bot tokeninizi şu şekilde ekleyin:
-```env
-TOKEN=buraya_gizli_bot_tokeninizi_yapistirin
+✨ Özellikler:
+- Şık **Embed tasarımı**
+- 4 farklı görsel desteği
+- 🇹🇷 UTC+3 saat dilimine göre zamanlama
+- Otomatik tepki emojisi
+
+---
+
+### `/özel_mesaj`
+Rol veya kullanıcıya güvenli **DM gönderimi**.
+
+🧠 Akıllı Koruma:
+- Toplu mesajlarda otomatik gecikme
+- Anti-spam güvenlik sistemi
+- Discord API rate-limit uyumlu yapı
+
+---
+
+### `/davet`
+Bot için hızlı davet bağlantısı oluşturur.
+
+---
+
+### `/hakkında`
+Bot sürümü, durum bilgisi ve geliştirici paneli.
+
+---
+
+## 👋 Otomatik Karşılama Sistemi
+Yeni katılan üyeleri:
+- Profil fotoğraflı
+- Renkli
+- Embed formatında
+
+otomatik olarak karşılar.
+
+---
+
+## 💬 Akıllı Yanıt Sistemi
+Aşağıdaki mesajlara otomatik yanıt verir:
 
 ```
 
+sa
+selamün aleyküm
+nasılsın
 
-4. Botu başlatın:
+````
+
+Askeri ve resmî sunucu kültürüne uygun cevaplar içerir.
+
+---
+
+## ☁️ 7/24 Bulut Uyumu
+
+Desteklenen platformlar:
+
+- Koyeb
+- Render
+- Diğer Node.js destekli hosting sistemleri
+
+HTTP port sistemi sayesinde kesintisiz çalışmaya uygundur.
+
+---
+
+## 👁️ Özel Aktivite
+
+> 🏛️ Karargâhı izliyor
+
+---
+
+# 🛠️ Kurulum
+
+## 📋 Gereksinimler
+
+- Node.js (v16+ önerilir)
+- Discord Bot Token
+- Message Content Intent (Açık)
+- Server Members Intent (Açık)
+
+---
+
+## ⚙️ Kurulum Adımları
+
+### 1️⃣ Depoyu Klonlayın
+
+```bash
+git clone <repo-link>
+````
+
+---
+
+### 2️⃣ Paketleri Yükleyin
+
+```bash
+npm install
+```
+
+---
+
+### 3️⃣ `.env` Dosyası
+
+```env
+TOKEN=BURAYA_BOT_TOKEN
+```
+
+---
+
+### 4️⃣ Başlatın
+
 ```bash
 node index.js
-
 ```
 
+---
 
+# 🏆 Açık Kaynak Topluluk Sürümü
 
-## 🔒 Güvenlik
+Bu proje açık kaynaklıdır ve topluluk katkılarına açıktır.
 
-Desteklenen sürümler ve güvenlik açığı bildirim süreçleri için lütfen [SECURITY.md](SECURITY.md) dosyasını inceleyin.
+## 🤝 Katkıda Bulunma
 
-## 📜 Lisans
+1. Fork oluşturun
+2. Yeni bir branch açın
 
-Bu proje **MIT Lisansı** ile lisanslanmıştır. Kodların kullanımı ve dağıtımı ile ilgili tüm detaylar için depodaki `LICENSE` dosyasına göz atabilirsiniz.
+   ```
+   feature/yeni-ozellik
+   ```
+3. Commit atın
+4. Pull Request gönderin
+
+---
+
+## 🧩 Katkı Alanları
+
+* Yeni Slash komutları
+* Güvenlik geliştirmeleri
+* Performans optimizasyonu
+* Çoklu dil desteği
+* Gelişmiş moderasyon sistemleri
+
+---
+
+## 🛡️ Güvenlik Politikası
+
+Güvenlik açıklarını lütfen herkese açık issue yerine özel olarak bildirin.
+
+Detaylar için:
+
+```
+SECURITY.md
+```
+
+---
+
+# 📜 Lisans
+
+MIT License
+
+Detaylar:
+
+```
+LICENSE
+```
+
+---
+
+# ⭐ Destek
+
+Projeyi beğendiyseniz ⭐ bırakmayı unutmayın.
+Topluluk büyüdükçe proje gelişmeye devam edecektir.
+
+```
