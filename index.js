@@ -37,7 +37,10 @@ client.once('ready', async () => {
             .addChannelOption(option => option.setName('kanal').setDescription('Gönderilecek kanal (Boş bırakırsanız bulunduğunuz kanala atar)').setRequired(false))
             .addStringOption(option => option.setName('zaman').setDescription('Saat (Örn: 19:30). Boş bırakırsanız anında gönderir.').setRequired(false))
             .addBooleanOption(option => option.setName('embed_kullan').setDescription('Mesaj şık bir kutu (Embed) içinde mi gitsin?').setRequired(false))
-            .addAttachmentOption(option => option.setName('gorsel').setDescription('Duyuruya eklenecek görsel (Opsiyonel)').setRequired(false))
+            .addAttachmentOption(option => option.setName('gorsel1').setDescription('1. Görsel (Embed içine girer)').setRequired(false))
+            .addAttachmentOption(option => option.setName('gorsel2').setDescription('2. Görsel (Opsiyonel)').setRequired(false))
+            .addAttachmentOption(option => option.setName('gorsel3').setDescription('3. Görsel (Opsiyonel)').setRequired(false))
+            .addAttachmentOption(option => option.setName('gorsel4').setDescription('4. Görsel (Opsiyonel)').setRequired(false))
             .addStringOption(option => option.setName('tepki1').setDescription('Eklenecek 1. emoji (Opsiyonel)').setRequired(false))
             .addStringOption(option => option.setName('tepki2').setDescription('Eklenecek 2. emoji (Opsiyonel)').setRequired(false))
             .addStringOption(option => option.setName('tepki3').setDescription('Eklenecek 3. emoji (Opsiyonel)').setRequired(false))
@@ -78,7 +81,7 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    // --- GELİŞMİŞ, ZAMANLANABİLİR, TEPKİLİ, EMBED VE GÖRSEL DESTEKLİ DUYURU KOMUTU ---
+    // --- GELİŞMİŞ, ZAMANLANABİLİR, TEPKİLİ, EMBED VE ÇOKLU GÖRSEL DESTEKLİ DUYURU KOMUTU ---
     if (interaction.commandName === 'duyuru') {
         await interaction.deferReply({ ephemeral: true });
 
@@ -86,7 +89,18 @@ client.on('interactionCreate', async interaction => {
         const kanal = interaction.options.getChannel('kanal') || interaction.channel;
         const zaman = interaction.options.getString('zaman');
         const embedKullan = interaction.options.getBoolean('embed_kullan');
-        const gorsel = interaction.options.getAttachment('gorsel'); // Kullanıcının yüklediği görsel
+
+        const gorsel1 = interaction.options.getAttachment('gorsel1');
+        const gorsel2 = interaction.options.getAttachment('gorsel2');
+        const gorsel3 = interaction.options.getAttachment('gorsel3');
+        const gorsel4 = interaction.options.getAttachment('gorsel4');
+
+        // Yüklenen tüm görselleri bir listede topla
+        const dosyalar = [];
+        if (gorsel1) dosyalar.push(gorsel1);
+        if (gorsel2) dosyalar.push(gorsel2);
+        if (gorsel3) dosyalar.push(gorsel3);
+        if (gorsel4) dosyalar.push(gorsel4);
 
         const tepkiler = [];
         for (let i = 1; i <= 5; i++) {
@@ -102,23 +116,25 @@ client.on('interactionCreate', async interaction => {
             }
         };
 
-        let gonderilecekVeri;
+        let gonderilecekVeri = {};
         if (embedKullan || mesaj.length > 1900) {
             const embed = new EmbedBuilder()
                 .setColor(0x0099FF)
                 .setDescription(mesaj);
             
-            // Eğer görsel yüklendiyse Embed'in içine büyük bir şekilde ekle
-            if (gorsel) {
-                embed.setImage(gorsel.url);
-            }
-            gonderilecekVeri = { embeds: [embed] };
+            // İlk görseli ana kutunun içine büyük yerleştir
+            if (gorsel1) embed.setImage(gorsel1.url);
+            
+            gonderilecekVeri.embeds = [embed];
+            
+            // Eğer 2, 3 ve 4. görseller de yüklendiyse onları alt alta mesaj dosyası olarak ekle
+            const digerDosyalar = dosyalar.slice(1);
+            if (digerDosyalar.length > 0) gonderilecekVeri.files = digerDosyalar;
+
         } else {
-            gonderilecekVeri = { content: mesaj };
-            // Eğer normal mesaj seçildiyse ve görsel varsa, görseli mesajın altına dosya olarak ekle
-            if (gorsel) {
-                gonderilecekVeri.files = [gorsel];
-            }
+            gonderilecekVeri.content = mesaj;
+            // Normal mesaj modunda tüm görselleri alt alta diz
+            if (dosyalar.length > 0) gonderilecekVeri.files = dosyalar;
         }
 
         // 1. DURUM: ZAMAN GİRİLMEDİYSE ANINDA GÖNDER
@@ -150,7 +166,7 @@ client.on('interactionCreate', async interaction => {
         const beklemeSuresi = hedefZaman.getTime() - simdi.getTime();
         const saatGosterimi = hedefZaman.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
         
-        await interaction.editReply({ content: `⏳ **Komut Alındı!** Duyurunuz (ve görseliniz) Türkiye saati ile **${saatGosterimi}**'da ${kanal} kanalına gönderilmek üzere zamanlandı.` });
+        await interaction.editReply({ content: `⏳ **Komut Alındı!** Duyurunuz (ve görselleriniz) Türkiye saati ile **${saatGosterimi}**'da ${kanal} kanalına gönderilmek üzere zamanlandı.` });
 
         setTimeout(async () => {
             try {
