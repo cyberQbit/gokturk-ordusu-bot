@@ -1,7 +1,7 @@
-# 🏛️ Göktürk Ordusu Discord Botu (v2.1.0)
+# 🏛️ Göktürk Ordusu Discord Botu (v2.2.0)
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.1.0-blue.svg" />
+  <img src="https://img.shields.io/badge/version-2.2.0-blue.svg" />
   <img src="https://img.shields.io/badge/node-%3E%3D16-green.svg" />
   <img src="https://img.shields.io/badge/license-MIT-yellow.svg" />
   <img src="https://img.shields.io/badge/discord.js-v14-5865F2.svg" />
@@ -12,44 +12,43 @@
 
 ## 🧠 Açıklama
 
-**Göktürk Ordusu Discord Botu**, Discord.js altyapısıyla geliştirilmiş, Slash (/) komut destekli, gelişmiş moderasyon, duyuru ve otomatik yanıt sistemlerine sahip profesyonel bir Discord moderasyon botudur.
+**Göktürk Ordusu Discord Botu**, Discord.js altyapısıyla geliştirilmiş, Slash (/) komut destekli, gelişmiş moderasyon, dinamik ses kanalı yönetimi ve otomatik yanıt sistemlerine sahip profesyonel bir Discord moderasyon botudur.
 
 Türkçe Discord sunucuları için optimize edilmiştir.  
-Toplu DM koruması, zamanlanabilir embed duyuru sistemi ve 7/24 bulut uyumluluğu ile modern Discord toplulukları için tasarlanmıştır.
+Toplu DM koruması, zamanlanabilir embed duyuru sistemi, **yeni nesil özel ses kanalı altyapısı** ve 7/24 bulut uyumluluğu ile modern Discord toplulukları için tasarlanmıştır.
 
-> Anahtar Kelimeler: Discord moderasyon botu, Discord.js bot, Slash komut botu, Türkçe Discord bot, gelişmiş duyuru botu
+> Anahtar Kelimeler: Discord moderasyon botu, Discord.js bot, Slash komut botu, Türkçe Discord bot, gelişmiş duyuru botu, geçici ses kanalı botu
 
 ---
 
 # 🚀 Özellikler
 
+## 🎙️ Dinamik Özel Oda Sistemi (YENİ!)
+Sunucu üyelerinin kendilerine ait özel ses ve metin kanalları oluşturmasını sağlayan gelişmiş sistem.
+
+✨ **Özellikler:**
+- `/oda_sistemi_kur`: Yöneticiler tarafından kurulan şık "Oda Oluştur" paneli.
+- **Akıllı Zamanlayıcı (Çöpçü):** Oluşturulan veya boşalan odalar 120 saniye boyunca sahipsiz kalırsa otomatik olarak silinir. Sunucu kirliliğini %100 önler.
+- **Oda Kontrol Paneli:** Oda sahibinin kanalına özel gönderilen butonlu panel sayesinde; odayı kilitleme, kilidi açma, isim değiştirme ve kişi limiti belirleme imkanı.
+
+---
+
 ## 🛡️ Modern Slash Komutları (`/`)
 
 ### `/duyuru`
 Gelişmiş ve zamanlanabilir duyuru sistemi.
-
-✨ Özellikler:
 - Şık **Embed tasarımı**
-- 4 farklı görsel desteği
-- 🇹🇷 UTC+3 saat dilimine göre zamanlama
+- Aynı anda 4 farklı görsel desteği
+- 🇹🇷 UTC+3 saat dilimine göre ileri tarihli zamanlama
 - Otomatik tepki emojisi
-
----
 
 ### `/özel_mesaj`
 Rol veya kullanıcıya güvenli **DM gönderimi**.
-
-🧠 Akıllı Koruma:
-- Toplu mesajlarda otomatik gecikme
+- Toplu mesajlarda otomatik gecikme (Discord API rate-limit koruması)
 - Anti-spam güvenlik sistemi
-- Discord API rate-limit uyumlu yapı
-
----
 
 ### `/davet`
 Bot için hızlı davet bağlantısı oluşturur.
-
----
 
 ### `/hakkında`
 Bot sürümü, durum bilgisi ve geliştirici paneli.
@@ -57,44 +56,21 @@ Bot sürümü, durum bilgisi ve geliştirici paneli.
 ---
 
 ## 👋 Otomatik Karşılama Sistemi
-Yeni katılan üyeleri:
-- Profil fotoğraflı
-- Renkli
-- Embed formatında
-
-otomatik olarak karşılar.
+Yeni katılan üyeleri `gelen-giden` kanalında profil fotoğraflı, renkli ve Embed formatında otomatik olarak karşılar.
 
 ---
 
 ## 💬 Akıllı Yanıt Sistemi
-Aşağıdaki mesajlara otomatik yanıt verir:
-
-```
-
-sa
-selamün aleyküm
-nasılsın
-
-````
-
-Askeri ve resmî sunucu kültürüne uygun cevaplar içerir.
+"sa", "selamün aleyküm", "nasılsın" gibi mesajlara askeri ve resmî sunucu kültürüne uygun otomatik yanıtlar verir.
 
 ---
 
 ## ☁️ 7/24 Bulut Uyumu
-
-Desteklenen platformlar:
-
-- Koyeb
-- Render
-- Diğer Node.js destekli hosting sistemleri
-
-HTTP port sistemi sayesinde kesintisiz çalışmaya uygundur.
+Koyeb, Render ve diğer Node.js destekli hosting sistemleri için özel HTTP port altyapısı sayesinde kesintisiz çalışmaya uygundur.
 
 ---
 
 ## 👁️ Özel Aktivite
-
 > 🏛️ Karargâhı izliyor
 
 ---
@@ -102,100 +78,26 @@ HTTP port sistemi sayesinde kesintisiz çalışmaya uygundur.
 # 🛠️ Kurulum
 
 ## 📋 Gereksinimler
-
 - Node.js (v16+ önerilir)
 - Discord Bot Token
-- Message Content Intent (Açık)
-- Server Members Intent (Açık)
-
----
+- **Message Content**, **Server Members** ve **Voice States** Intent'leri (Açık)
 
 ## ⚙️ Kurulum Adımları
 
-### 1️⃣ Depoyu Klonlayın
-
 ```bash
 git clone <repo-link>
-````
-
----
-
-### 2️⃣ Paketleri Yükleyin
-
-```bash
 npm install
 ```
 
----
+.env dosyasını oluşturun:
+``` TOKEN=BURAYA_BOT_TOKEN ```
 
-### 3️⃣ `.env` Dosyası
-
-```env
-TOKEN=BURAYA_BOT_TOKEN
-```
+Başlatın:
+```node index.js```
 
 ---
 
-### 4️⃣ Başlatın
+# **📜 Lisans**
+ `` MIT License.``
 
-```bash
-node index.js
-```
-
----
-
-# 🏆 Açık Kaynak Topluluk Sürümü
-
-Bu proje açık kaynaklıdır ve topluluk katkılarına açıktır.
-
-## 🤝 Katkıda Bulunma
-
-1. Fork oluşturun
-2. Yeni bir branch açın
-
-   ```
-   feature/yeni-ozellik
-   ```
-3. Commit atın
-4. Pull Request gönderin
-
----
-
-## 🧩 Katkı Alanları
-
-* Yeni Slash komutları
-* Güvenlik geliştirmeleri
-* Performans optimizasyonu
-* Çoklu dil desteği
-* Gelişmiş moderasyon sistemleri
-
----
-
-## 🛡️ Güvenlik Politikası
-
-Güvenlik açıklarını lütfen herkese açık issue yerine özel olarak bildirin.
-
-Detaylar için:
-
-```
-SECURITY.md
-```
-
----
-
-# 📜 Lisans
-
-MIT License
-
-Detaylar:
-
-```
-LICENSE
-```
-
----
-
-# ⭐ Destek
-
-Projeyi beğendiyseniz ⭐ bırakmayı unutmayın.
-Topluluk büyüdükçe proje gelişmeye devam edecektir.
+Proje açık kaynaklıdır, beğendiyseniz ⭐ bırakmayı unutmayın!
