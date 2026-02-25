@@ -230,11 +230,11 @@ if (interaction.commandName === 'hakkında') {
     const hakkindaEmbed = new EmbedBuilder()
         .setColor(0x0099FF) // Göktürk Mavisi
         .setTitle('🐺 Göktürk Ordusu Yönetim Sistemi')
-        .setDescription('Göktürk Ordusu Discord sunucusunun resmi asistanı ve gelişmiş moderasyon botu.\nModern Slash (/) komut altyapısı ile güvenli ve stabil hizmet sunar.')
+        .setDescription('Göktürk Ordusu Discord sunucusunun resmi asistanı ve gelişmiş moderasyon botu.\nModern Slash (/) komut altyapısı, **dinamik ses kanalı yönetimi** ve akıllı sistemleriyle güvenli bir hizmet sunar.')
         .addFields(
             { name: '🛠️ Geliştirici', value: 'cyberQbit', inline: true },
             { name: '📡 Durum', value: '7/24 Aktif (Bulut Altyapısı)', inline: true },
-            { name: '📜 Sürüm', value: 'v2.1.0 - Stabilite & Moderasyon Güncellemesi', inline: false }
+            { name: '📜 Sürüm', value: 'v2.2.0 - Özel Oda ve İletişim Güncellemesi', inline: false }
         )
         .setTimestamp()
         .setFooter({ text: 'Göktürk Ordusu Komuta Kademesi • Karargâhı izliyor' });
