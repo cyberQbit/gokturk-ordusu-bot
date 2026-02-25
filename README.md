@@ -199,5 +199,3 @@ LICENSE
 
 Projeyi beğendiyseniz ⭐ bırakmayı unutmayın.
 Topluluk büyüdükçe proje gelişmeye devam edecektir.
-
-```
