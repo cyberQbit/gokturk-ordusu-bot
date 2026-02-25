@@ -10,7 +10,7 @@
 
 ---
 
-## 🧠 SEO Açıklama
+## 🧠 Açıklama
 
 **Göktürk Ordusu Discord Botu**, Discord.js altyapısıyla geliştirilmiş, Slash (/) komut destekli, gelişmiş moderasyon, duyuru ve otomatik yanıt sistemlerine sahip profesyonel bir Discord moderasyon botudur.
 
