@@ -3,6 +3,7 @@ require('dotenv').config();
 const fs = require('fs');
 
 const ozelOdalar = new Set();
+const odaTimerlar = new Map(); // channelId -> timeoutId
 
 const http = require('http');
 http.createServer((req, res) => {
@@ -94,13 +95,20 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
 
     if (interaction.isChatInputCommand() && interaction.commandName === 'oda_sistemi_kur') {
+        if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+            return interaction.reply({ content: '❌ Bu komutu kullanmak için **Yönetici** yetkisine sahip olmanız gerekiyor.', ephemeral: true });
+        }
+
         const embed = new EmbedBuilder()
             .setTitle('🎧 Özel Odanı Oluştur')
             .setDescription('Aşağıdaki **Odanı Oluştur!** butonuna tıklayarak Karargâhta kendinize ait özel bir ses kanalı açabilirsiniz.\nOluşturduğunuz odanın metin sohbetine giderek odanızı yönetebilirsiniz.')
             .setColor(0x2B2D31);
 
+        const davetLinki = `https://discord.com/api/oauth2/authorize?client_id=${client.user.id}&permissions=8&scope=bot%20applications.commands`;
+
         const buton = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('oda_kur_buton').setLabel('Odanı Oluştur!').setStyle(ButtonStyle.Success).setEmoji('🎙️')
+            new ButtonBuilder().setCustomId('oda_kur_buton').setLabel('Odanı Oluştur!').setStyle(ButtonStyle.Success).setEmoji('🎙️'),
+            new ButtonBuilder().setLabel('Botu Sunucuna Davet Et').setURL(davetLinki).setStyle(ButtonStyle.Link).setEmoji('🔗')
         );
 
         await interaction.channel.send({ embeds: [embed], components: [buton] });
@@ -323,6 +331,20 @@ if (interaction.commandName === 'hakkında') {
 
             ozelOdalar.add(yeniOda.id);
 
+            // 120 saniye içinde kimse girmezse odayı otomatik sil
+            const bosOdaTimer = setTimeout(async () => {
+                try {
+                    const kanal = interaction.guild.channels.cache.get(yeniOda.id);
+                    if (kanal && kanal.members.size === 0) {
+                        await kanal.delete();
+                        ozelOdalar.delete(yeniOda.id);
+                        odaTimerlar.delete(yeniOda.id);
+                        console.log(`🗑️ Boş oda silindi (120 sn doldu): ${yeniOda.name}`);
+                    }
+                } catch (e) { console.error('Boş oda silinemedi:', e); }
+            }, 120_000);
+            odaTimerlar.set(yeniOda.id, bosOdaTimer);
+
             const panelEmbed = new EmbedBuilder()
                 .setTitle('🎛️ Oda Kontrol Paneli')
                 .setDescription('Odanızı kişiselleştirmek için butonları kullanın.')
@@ -416,18 +438,40 @@ client.on('guildMemberAdd', member => {
 });
 
 client.on('voiceStateUpdate', async (oldState, newState) => {
-const eskiKanal = oldState.channel;
+    const eskiKanal = oldState.channel;
+    const yeniKanal = newState.channel;
 
-if (eskiKanal && ozelOdalar.has(eskiKanal.id)) {
-    if (eskiKanal.members.size === 0) {
-        try {
-            await eskiKanal.delete();
-            ozelOdalar.delete(eskiKanal.id);
-        } catch (error) {
-            console.error('Oda silinirken hata:', error);
+    // Birisi özel bir odaya girdi → varsa zamanlayıcıyı iptal et
+    if (yeniKanal && ozelOdalar.has(yeniKanal.id)) {
+        if (odaTimerlar.has(yeniKanal.id)) {
+            clearTimeout(odaTimerlar.get(yeniKanal.id));
+            odaTimerlar.delete(yeniKanal.id);
         }
     }
-}
+
+    // Birisi özel bir odadan çıktı → oda boşsa 120 saniye sonra sil
+    if (eskiKanal && ozelOdalar.has(eskiKanal.id)) {
+        if (eskiKanal.members.size === 0) {
+            // Önceden çalışan bir timer varsa temizle
+            if (odaTimerlar.has(eskiKanal.id)) {
+                clearTimeout(odaTimerlar.get(eskiKanal.id));
+            }
+            const timer = setTimeout(async () => {
+                try {
+                    const kanal = eskiKanal.guild.channels.cache.get(eskiKanal.id);
+                    if (kanal && kanal.members.size === 0) {
+                        await kanal.delete();
+                        ozelOdalar.delete(eskiKanal.id);
+                        odaTimerlar.delete(eskiKanal.id);
+                        console.log(`🗑️ Boş oda silindi (120 sn doldu): ${eskiKanal.name}`);
+                    }
+                } catch (error) {
+                    console.error('Oda silinirken hata:', error);
+                }
+            }, 120_000);
+            odaTimerlar.set(eskiKanal.id, timer);
+        }
+    }
 });
 
 client.login(process.env.TOKEN);
