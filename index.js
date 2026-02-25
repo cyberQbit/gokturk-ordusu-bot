@@ -1,6 +1,8 @@
-const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST, Routes, SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST, Routes, SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 require('dotenv').config();
 const fs = require('fs');
+
+const ozelOdalar = new Set();
 
 const http = require('http');
 http.createServer((req, res) => {
@@ -70,6 +72,11 @@ client.once('ready', async () => {
         new SlashCommandBuilder()
             .setName('davet')
             .setDescription('Göktürk Ordusu botunu kendi Karargâhınıza (sunucunuza) davet edin.'),
+
+        new SlashCommandBuilder()
+            .setName('oda_sistemi_kur')
+            .setDescription('Özel oda oluşturma panelini bulunduğunuz kanala gönderir.')
+            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     ].map(command => command.toJSON());
 
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -85,7 +92,20 @@ client.once('ready', async () => {
 
 // Komut ve Mesaj Dinleyici
 client.on('interactionCreate', async interaction => {
-    if (!interaction.isChatInputCommand()) return;
+
+    if (interaction.isChatInputCommand() && interaction.commandName === 'oda_sistemi_kur') {
+        const embed = new EmbedBuilder()
+            .setTitle('🎧 Özel Odanı Oluştur')
+            .setDescription('Aşağıdaki **Odanı Oluştur!** butonuna tıklayarak Karargâhta kendinize ait özel bir ses kanalı açabilirsiniz.\nOluşturduğunuz odanın metin sohbetine giderek odanızı yönetebilirsiniz.')
+            .setColor(0x2B2D31);
+
+        const buton = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('oda_kur_buton').setLabel('Odanı Oluştur!').setStyle(ButtonStyle.Success).setEmoji('🎙️')
+        );
+
+        await interaction.channel.send({ embeds: [embed], components: [buton] });
+        return interaction.reply({ content: '✅ Özel Oda paneli başarıyla bu kanala kuruldu!', ephemeral: true });
+    }
 
     // --- GELİŞMİŞ, ZAMANLANABİLİR, TEPKİLİ, EMBED VE ÇOKLU GÖRSEL DESTEKLİ DUYURU KOMUTU ---
     if (interaction.commandName === 'duyuru') {
@@ -284,6 +304,88 @@ if (interaction.commandName === 'hakkında') {
         }
     }
 
+    if (interaction.isButton()) {
+        
+        if (interaction.customId === 'oda_kur_buton') {
+            const uye = interaction.member;
+            let kategoriId = interaction.channel.parentId;
+            if (uye.voice.channel) kategoriId = uye.voice.channel.parentId;
+
+            const yeniOda = await interaction.guild.channels.create({
+                name: `🔊 ${uye.user.username}'in Odası`,
+                type: ChannelType.GuildVoice,
+                parent: kategoriId,
+                permissionOverwrites: [
+                    { id: interaction.guild.id, allow: [PermissionFlagsBits.Connect] },
+                    { id: uye.id, allow: [PermissionFlagsBits.ManageChannels, PermissionFlagsBits.MoveMembers, PermissionFlagsBits.MuteMembers] }
+                ]
+            });
+
+            ozelOdalar.add(yeniOda.id);
+
+            const panelEmbed = new EmbedBuilder()
+                .setTitle('🎛️ Oda Kontrol Paneli')
+                .setDescription('Odanızı kişiselleştirmek için butonları kullanın.')
+                .setColor(0x0099FF);
+
+            const panelButonlar = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('oda_kilit_kapat').setLabel('Kilitle').setStyle(ButtonStyle.Danger).setEmoji('🔒'),
+                new ButtonBuilder().setCustomId('oda_kilit_ac').setLabel('Kilidi Aç').setStyle(ButtonStyle.Success).setEmoji('🔓'),
+                new ButtonBuilder().setCustomId('oda_isim_degis').setLabel('İsim Değiştir').setStyle(ButtonStyle.Secondary).setEmoji('✏️'),
+                new ButtonBuilder().setCustomId('oda_limit_ayarla').setLabel('Kişi Limiti').setStyle(ButtonStyle.Secondary).setEmoji('👥')
+            );
+
+            await yeniOda.send({ content: `${uye}`, embeds: [panelEmbed], components: [panelButonlar] });
+            
+            try { if (uye.voice.channel) await uye.voice.setChannel(yeniOda); } catch(e) {}
+            return interaction.reply({ content: `✅ Odanız oluşturuldu! Katılın: ${yeniOda}`, ephemeral: true });
+        }
+
+        if (['oda_kilit_kapat', 'oda_kilit_ac', 'oda_isim_degis', 'oda_limit_ayarla'].includes(interaction.customId)) {
+            const sesKanali = interaction.member.voice.channel;
+            if (!sesKanali || !ozelOdalar.has(sesKanali.id)) return interaction.reply({ content: '❌ Odada değilsiniz!', ephemeral: true });
+            if (!sesKanali.permissionsFor(interaction.member).has(PermissionFlagsBits.ManageChannels)) return interaction.reply({ content: '❌ Oda sizin değil!', ephemeral: true });
+
+            if (interaction.customId === 'oda_kilit_kapat') {
+                await sesKanali.permissionOverwrites.edit(interaction.guild.id, { Connect: false });
+                return interaction.reply({ content: '🔒 Oda kilitlendi!', ephemeral: true });
+            }
+            if (interaction.customId === 'oda_kilit_ac') {
+                await sesKanali.permissionOverwrites.edit(interaction.guild.id, { Connect: true });
+                return interaction.reply({ content: '🔓 Oda kilidi açıldı!', ephemeral: true });
+            }
+            if (interaction.customId === 'oda_isim_degis') {
+                const modal = new ModalBuilder().setCustomId('modal_isim').setTitle('Oda İsmi');
+                const isimInput = new TextInputBuilder().setCustomId('yeni_isim').setLabel('Yeni İsim').setStyle(TextInputStyle.Short).setRequired(true);
+                modal.addComponents(new ActionRowBuilder().addComponents(isimInput));
+                return interaction.showModal(modal);
+            }
+            if (interaction.customId === 'oda_limit_ayarla') {
+                const modal = new ModalBuilder().setCustomId('modal_limit').setTitle('Kişi Limiti');
+                const limitInput = new TextInputBuilder().setCustomId('yeni_limit').setLabel('Limit (0-99)').setStyle(TextInputStyle.Short).setRequired(true);
+                modal.addComponents(new ActionRowBuilder().addComponents(limitInput));
+                return interaction.showModal(modal);
+            }
+        }
+    }
+
+    if (interaction.isModalSubmit()) {
+        const sesKanali = interaction.member.voice.channel;
+        if (!sesKanali || !ozelOdalar.has(sesKanali.id)) return interaction.reply({ content: '❌ Odada değilsiniz!', ephemeral: true });
+
+        if (interaction.customId === 'modal_isim') {
+            const yeniIsim = interaction.fields.getTextInputValue('yeni_isim');
+            await sesKanali.setName(yeniIsim);
+            return interaction.reply({ content: `✅ İsim değişti!`, ephemeral: true });
+        }
+        if (interaction.customId === 'modal_limit') {
+            const limit = parseInt(interaction.fields.getTextInputValue('yeni_limit'));
+            if (isNaN(limit)) return interaction.reply({ content: '❌ Lütfen sayı girin!', ephemeral: true });
+            await sesKanali.setUserLimit(limit);
+            return interaction.reply({ content: `✅ Limit ayarlandı!`, ephemeral: true });
+        }
+    }
+
 });
 
 // Otomatik Cevap Sistemi
@@ -311,6 +413,21 @@ client.on('guildMemberAdd', member => {
         .setThumbnail(member.user.displayAvatarURL());
 
     kanal.send({ embeds: [hosgeldinEmbed] });
+});
+
+client.on('voiceStateUpdate', async (oldState, newState) => {
+const eskiKanal = oldState.channel;
+
+if (eskiKanal && ozelOdalar.has(eskiKanal.id)) {
+    if (eskiKanal.members.size === 0) {
+        try {
+            await eskiKanal.delete();
+            ozelOdalar.delete(eskiKanal.id);
+        } catch (error) {
+            console.error('Oda silinirken hata:', error);
+        }
+    }
+}
 });
 
 client.login(process.env.TOKEN);
