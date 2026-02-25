@@ -30,18 +30,19 @@ client.once('ready', async () => {
     // --- SLASH KOMUT TANIMLARI ---
     const commands = [
         new SlashCommandBuilder()
-        .setName('duyuru')
-        .setDescription('Sunucuya (veya belirtilen kanala) gelişmiş duyuru gönderir.')
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-        .addStringOption(option => option.setName('mesaj').setDescription('Duyuru metni (Alt satır için \\n kullanın)').setRequired(true))
-        .addChannelOption(option => option.setName('kanal').setDescription('Gönderilecek kanal (Boş bırakırsanız bulunduğunuz kanala atar)').setRequired(false))
-        .addStringOption(option => option.setName('zaman').setDescription('Saat (Örn: 19:30). Boş bırakırsanız anında gönderir.').setRequired(false))
-        .addBooleanOption(option => option.setName('embed_kullan').setDescription('Mesaj şık bir kutu (Embed) içinde mi gitsin?').setRequired(false))
-        .addStringOption(option => option.setName('tepki1').setDescription('Eklenecek 1. emoji (Opsiyonel)').setRequired(false))
-        .addStringOption(option => option.setName('tepki2').setDescription('Eklenecek 2. emoji (Opsiyonel)').setRequired(false))
-        .addStringOption(option => option.setName('tepki3').setDescription('Eklenecek 3. emoji (Opsiyonel)').setRequired(false))
-        .addStringOption(option => option.setName('tepki4').setDescription('Eklenecek 4. emoji (Opsiyonel)').setRequired(false))
-        .addStringOption(option => option.setName('tepki5').setDescription('Eklenecek 5. emoji (Opsiyonel)').setRequired(false)),
+            .setName('duyuru')
+            .setDescription('Sunucuya (veya belirtilen kanala) gelişmiş duyuru gönderir.')
+            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+            .addStringOption(option => option.setName('mesaj').setDescription('Duyuru metni (Alt satır için \\n kullanın)').setRequired(true))
+            .addChannelOption(option => option.setName('kanal').setDescription('Gönderilecek kanal (Boş bırakırsanız bulunduğunuz kanala atar)').setRequired(false))
+            .addStringOption(option => option.setName('zaman').setDescription('Saat (Örn: 19:30). Boş bırakırsanız anında gönderir.').setRequired(false))
+            .addBooleanOption(option => option.setName('embed_kullan').setDescription('Mesaj şık bir kutu (Embed) içinde mi gitsin?').setRequired(false))
+            .addAttachmentOption(option => option.setName('gorsel').setDescription('Duyuruya eklenecek görsel (Opsiyonel)').setRequired(false))
+            .addStringOption(option => option.setName('tepki1').setDescription('Eklenecek 1. emoji (Opsiyonel)').setRequired(false))
+            .addStringOption(option => option.setName('tepki2').setDescription('Eklenecek 2. emoji (Opsiyonel)').setRequired(false))
+            .addStringOption(option => option.setName('tepki3').setDescription('Eklenecek 3. emoji (Opsiyonel)').setRequired(false))
+            .addStringOption(option => option.setName('tepki4').setDescription('Eklenecek 4. emoji (Opsiyonel)').setRequired(false))
+            .addStringOption(option => option.setName('tepki5').setDescription('Eklenecek 5. emoji (Opsiyonel)').setRequired(false)),
               
         new SlashCommandBuilder()
             .setName('hakkında')
@@ -77,14 +78,15 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    // --- GELİŞMİŞ, ZAMANLANABİLİR, TEPKİLİ VE SEÇMELİ EMBED DUYURU KOMUTU ---
+    // --- GELİŞMİŞ, ZAMANLANABİLİR, TEPKİLİ, EMBED VE GÖRSEL DESTEKLİ DUYURU KOMUTU ---
     if (interaction.commandName === 'duyuru') {
         await interaction.deferReply({ ephemeral: true });
 
         const mesaj = interaction.options.getString('mesaj').replace(/\\n/g, '\n');
         const kanal = interaction.options.getChannel('kanal') || interaction.channel;
         const zaman = interaction.options.getString('zaman');
-        const embedKullan = interaction.options.getBoolean('embed_kullan'); // Kullanıcının seçimi
+        const embedKullan = interaction.options.getBoolean('embed_kullan');
+        const gorsel = interaction.options.getAttachment('gorsel'); // Kullanıcının yüklediği görsel
 
         const tepkiler = [];
         for (let i = 1; i <= 5; i++) {
@@ -100,15 +102,23 @@ client.on('interactionCreate', async interaction => {
             }
         };
 
-        // Kullanıcı Embed seçtiyse VEYA mesaj 1900 karakterden uzunsa (çökmeyi engellemek için) Embed yap
         let gonderilecekVeri;
         if (embedKullan || mesaj.length > 1900) {
             const embed = new EmbedBuilder()
                 .setColor(0x0099FF)
                 .setDescription(mesaj);
+            
+            // Eğer görsel yüklendiyse Embed'in içine büyük bir şekilde ekle
+            if (gorsel) {
+                embed.setImage(gorsel.url);
+            }
             gonderilecekVeri = { embeds: [embed] };
         } else {
             gonderilecekVeri = { content: mesaj };
+            // Eğer normal mesaj seçildiyse ve görsel varsa, görseli mesajın altına dosya olarak ekle
+            if (gorsel) {
+                gonderilecekVeri.files = [gorsel];
+            }
         }
 
         // 1. DURUM: ZAMAN GİRİLMEDİYSE ANINDA GÖNDER
@@ -119,7 +129,7 @@ client.on('interactionCreate', async interaction => {
                 return interaction.editReply({ content: `✅ Duyuru başarıyla ${kanal} kanalına gönderildi!` });
             } catch (err) {
                 console.error(err);
-                return interaction.editReply({ content: '❌ Mesaj gönderilemedi. Bota yetki vermemiş olabilirsiniz.' });
+                return interaction.editReply({ content: '❌ Mesaj gönderilemedi. Dosya boyutu çok büyük olabilir veya yetki eksik.' });
             }
         }
 
@@ -140,7 +150,7 @@ client.on('interactionCreate', async interaction => {
         const beklemeSuresi = hedefZaman.getTime() - simdi.getTime();
         const saatGosterimi = hedefZaman.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
         
-        await interaction.editReply({ content: `⏳ **Komut Alındı!** Duyurunuz Türkiye saati ile **${saatGosterimi}**'da ${kanal} kanalına gönderilmek üzere zamanlandı.` });
+        await interaction.editReply({ content: `⏳ **Komut Alındı!** Duyurunuz (ve görseliniz) Türkiye saati ile **${saatGosterimi}**'da ${kanal} kanalına gönderilmek üzere zamanlandı.` });
 
         setTimeout(async () => {
             try {
