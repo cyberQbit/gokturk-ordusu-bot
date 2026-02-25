@@ -2,6 +2,12 @@ const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST,
 require('dotenv').config();
 const fs = require('fs');
 
+const http = require('http');
+http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Gokturk Ordusu Karargahi 7/24 Aktif!');
+}).listen(process.env.PORT || 8000);
+
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds,
