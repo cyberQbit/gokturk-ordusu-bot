@@ -35,7 +35,7 @@ client.once('ready', async () => {
 
     // Durum Ayarı
     client.user.setPresence({
-        activities: [{ name: 'Her Cuma ve Cmrt Operasyon! Sende Aramıza Katıl: dsc.gg/GokturkARMY', type: ActivityType.Playing }],
+        activities: [{ name: '🚀v2.3.0! - dsc.gg/GokturkARMY', type: ActivityType.Playing }],
         status: 'dnd',
     });
 
