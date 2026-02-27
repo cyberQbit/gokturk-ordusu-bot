@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST, Routes, SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST, Routes, SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ModalBuilder, TextInputBuilder, TextInputStyle, Partials } = require('discord.js');
 require('dotenv').config();
 const fs = require('fs');
 
@@ -17,8 +17,10 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers
-    ] 
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.DirectMessages,
+    ],
+    partials: [Partials.Channel, Partials.Message],
 });
 
 // Özel cevaplar listesi
@@ -79,6 +81,14 @@ client.once('ready', async () => {
             .setName('oda_sistemi_kur')
             .setDescription('Özel oda oluşturma panelini bulunduğunuz kanala gönderir.')
             .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+
+        // --- TELSİZ (MODMAIL) YANIT KOMUTU ---
+        new SlashCommandBuilder()
+            .setName('telsiz_yanit')
+            .setDescription('Telsizden mesaj atan askere DM ile yanıt verir.')
+            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+            .addStringOption(option => option.setName('hedef_id').setDescription('Yanıt verilecek askerin ID\'si (telsiz kanalından kopyala)').setRequired(true))
+            .addStringOption(option => option.setName('mesaj').setDescription('Gönderilecek yanıt mesajı').setRequired(true)),
     ].map(command => command.toJSON());
 
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -456,20 +466,62 @@ if (interaction.commandName === 'hakkında') {
         }
     }
 
+    // --- TELSİZ YANIT KOMUTU HANDLER ---
+    if (interaction.isChatInputCommand() && interaction.commandName === 'telsiz_yanit') {
+        await interaction.deferReply({ ephemeral: true });
+
+        const hedefId = interaction.options.getString('hedef_id');
+        const mesaj = interaction.options.getString('mesaj');
+
+        try {
+            const hedef = await client.users.fetch(hedefId);
+            await hedef.send(`📻 **Karargâh Telsizi:** ${mesaj}`);
+            return interaction.editReply({ content: `✅ Yanıt **${hedef.tag}** askere başarıyla iletildi!` });
+        } catch (err) {
+            return interaction.editReply({ content: `❌ Askerin telsizi kapalı (DM kilitli) veya ID hatalı!` });
+        }
+    }
+
 });
 
-// --- RIMURU: ASAYİŞ VE OTOMATİK CEVAP SİSTEMİ ---
+// --- ASAYİŞ, TELSİZ VE OTOMATİK CEVAP SİSTEMİ ---
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
-    const msg = message.content.toLowerCase();
+    // 1. TELSİZ (MODMAIL) SİSTEMİ - Eğer mesaj DM'den geliyorsa
+    if (!message.guild) {
+        const guild = client.guilds.cache.first(); // Botun bulunduğu ilk sunucu (Karargah)
+        if (!guild) return;
 
-    // 1. Reklam ve Link Koruması
+        const telsizKanal = guild.channels.cache.find(c => c.name === 'telsiz-komuta');
+        if (!telsizKanal) return message.reply('❌ Karargâh telsiz hattı şu an kapalı.');
+
+        const embed = new EmbedBuilder()
+           .setColor(0x00FF00)
+           .setTitle('📻 Yeni Telsiz Mesajı (DM)')
+           .setDescription(message.content || '*(İçerik yok)*')
+           .addFields({ name: 'Gönderen Asker', value: message.author.tag })
+           .setFooter({ text: 'Yanıtlamak için /telsiz_yanit komutunu kullanın' })
+           .setTimestamp();
+
+        if (message.attachments.size > 0) {
+            embed.setImage(message.attachments.first().url);
+        }
+
+        await telsizKanal.send({
+            content: `🔔 **YENİ BAĞLANTI:** <@${message.author.id}> telsizden ulaştı!\n**Kişi ID (Kopyala):** \`${message.author.id}\``,
+            embeds: [embed]
+        });
+        return message.reply('✅ Mesajınız Karargâha iletildi. Lütfen telsiz başında beklemede kalın.');
+    }
+
+    // 2. Reklam ve Link Koruması (Sadece sunucuda çalışır)
+    const msg = message.content.toLowerCase();
     const reklamlar = ["discord.gg", "discord.com/invite", "t.me", "http://", "https://"];
+
     if (reklamlar.some(kelime => msg.includes(kelime))) {
-        // Eğer yöneticiyse link atmasına izin ver
-        if (message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
-        
+        if (message.member && message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
+
         try {
             await message.delete();
             const uyari = await message.channel.send(`⚠️ ${message.author}, Karargâhta izinsiz link/reklam paylaşımı yasaktır!`);
@@ -478,7 +530,7 @@ client.on('messageCreate', async message => {
         } catch(e) {}
     }
 
-    // 2. Küfür ve Argo Koruması
+    // 3. Küfür ve Argo Koruması
     const kufurler = ["amk", "aq", "orospu", "piç", "siktir", "yavşak", "pezevenk"];
     const kelimeler = msg.split(/\s+/);
 
@@ -491,11 +543,11 @@ client.on('messageCreate', async message => {
         } catch(e) {}
     }
 
-    // 3. Mevcut Otomatik Cevaplar
+    // 4. Mevcut Otomatik Cevaplar
     if (responses[msg]) {
         const embed = new EmbedBuilder()
-           .setColor(0x0099FF)
-           .setDescription(responses[msg]);
+          .setColor(0x0099FF)
+          .setDescription(responses[msg]);
         return message.reply({ embeds: [embed] });
     }
 });
@@ -559,6 +611,53 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
             odaTimerlar.set(eskiKanal.id, timer);
         }
     }
+});
+
+// --- İSTİHBARAT (LOGGER) SİSTEMİ ---
+
+// 1. Silinen Mesajları Takip Et
+client.on('messageDelete', async message => {
+    if (message.author?.bot || !message.guild) return;
+
+    const logKanal = message.guild.channels.cache.find(c => c.name === 'istihbarat');
+    if (!logKanal) return;
+
+    const embed = new EmbedBuilder()
+       .setColor(0xFF0000)
+       .setTitle('🗑️ Bir Mesaj Silindi')
+       .addFields(
+            { name: 'Asker', value: `${message.author} (${message.author.tag})`, inline: true },
+            { name: 'Kanal', value: `${message.channel}`, inline: true },
+            { name: 'İçerik', value: message.content || '[İçerik yok veya sadece görsel]' }
+       )
+       .setTimestamp()
+       .setFooter({ text: 'Göktürk İstihbarat Dairesi' });
+
+    logKanal.send({ embeds: [embed] }).catch(() => {});
+});
+
+// 2. Rütbe (Rol) Değişimlerini Takip Et
+client.on('guildMemberUpdate', async (oldMember, newMember) => {
+    const logKanal = newMember.guild.channels.cache.find(c => c.name === 'istihbarat');
+    if (!logKanal) return;
+
+    const removedRoles = oldMember.roles.cache.filter(role => !newMember.roles.cache.has(role.id));
+    const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
+
+    if (addedRoles.size === 0 && removedRoles.size === 0) return;
+
+    let logMesaj = '';
+    if (addedRoles.size > 0) logMesaj += `**Verilen Rütbeler:** ${addedRoles.map(r => r.name).join(', ')}\n`;
+    if (removedRoles.size > 0) logMesaj += `**Alınan Rütbeler:** ${removedRoles.map(r => r.name).join(', ')}`;
+
+    const embed = new EmbedBuilder()
+       .setColor(0xFFA500)
+       .setTitle('🪖 Rütbe Güncellemesi')
+       .setDescription(`${newMember.user} personelinin rütbeleri değiştirildi.\n\n${logMesaj}`)
+       .setTimestamp()
+       .setFooter({ text: 'Göktürk İstihbarat Dairesi' });
+
+    logKanal.send({ embeds: [embed] }).catch(() => {});
 });
 
 client.login(process.env.TOKEN);
