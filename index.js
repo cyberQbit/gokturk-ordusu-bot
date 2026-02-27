@@ -518,7 +518,7 @@ client.on('guildMemberAdd', async member => {
     const hosgeldinEmbed = new EmbedBuilder()
        .setColor(0x0099FF)
        .setTitle('🐺 Karargâha Yeni Bir Kan Katıldı!')
-       .setDescription(`Hoş geldin ${member}! Göktürk Ordusu saflarına katıldığın için gururluyuz.\n\n🛡️ Otomatik olarak askeri rütben tahsis edilmiştir. Kuralları okumayı unutma!`)
+       .setDescription(`Hoş geldin ${member}! Göktürk Ordusu saflarına katıldığın için gururluyuz.\n\n🛡️ Otomatik olarak ** @✒️ ∙ Kayıtsız ** rolün tahsis edilmiştir. ** #・📄╵kayıt-bilgi ** kanalını okumayı unutma!`)
        .setThumbnail(member.user.displayAvatarURL());
 
     kanal.send({ embeds: [hosgeldinEmbed] });
