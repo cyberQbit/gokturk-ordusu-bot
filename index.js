@@ -493,7 +493,7 @@ client.on('messageCreate', async message => {
         const guild = client.guilds.cache.first(); // Botun bulunduğu ilk sunucu (Karargah)
         if (!guild) return;
 
-        const telsizKanal = guild.channels.cache.find(c => c.name === 'telsiz-komuta');
+        const telsizKanal = guild.channels.cache.find(c => c.name === '🔒・telsiz-komuta-⌈dm⌋');
         if (!telsizKanal) return message.reply('❌ Karargâh telsiz hattı şu an kapalı.');
 
         const embed = new EmbedBuilder()
