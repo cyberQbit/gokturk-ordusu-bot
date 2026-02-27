@@ -1,6 +1,6 @@
 # Güvenlik Politikası
 
-MKA Discord Bot projesinin güvenliği bizim için önemlidir. Bu belge, hangi sürümlerin desteklendiğini ve olası bir güvenlik açığının nasıl bildirileceğini açıklar.
+Göktürk Ordusu Discord Bot projesinin güvenliği bizim için önemlidir. Bu belge, hangi sürümlerin desteklendiğini ve olası bir güvenlik açığının nasıl bildirileceğini açıklar.
 
 ## Desteklenen Sürümler
 
