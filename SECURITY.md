@@ -8,9 +8,9 @@ MKA Discord Bot projesinin güvenliği bizim için önemlidir. Bu belge, hangi s
 
 | Sürüm   | Destek Durumu |
 | ------- | ------------------ |
-| v1.3.x  | :white_check_mark: |
-| v1.2.x  | :x:                |
-| < 1.2.0 | :x:                |
+| v2.3.0  | :white_check_mark: |
+| v2.2.0  | :x:                |
+| < 2.0.0 | :x:                |
 
 ## Güvenlik Açığı Bildirimi
 
