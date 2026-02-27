@@ -490,16 +490,17 @@ client.on('messageCreate', async message => {
 
     // 1. TELSİZ (MODMAIL) SİSTEMİ - Eğer mesaj DM'den geliyorsa
     if (!message.guild) {
-        const guild = client.guilds.cache.first(); // Botun bulunduğu ilk sunucu (Karargah)
+        const sunucuId = "1249856622470365276"; // Göktürk Ordusu sunucu ID'si
+        const guild = client.guilds.cache.get(sunucuId);
         if (!guild) return;
 
         const telsizKanal = guild.channels.cache.find(c => c.name === 'telsiz-komuta');
-        if (!telsizKanal) return message.reply('❌ Karargâh telsiz hattı şu an kapalı.');
+        if (!telsizKanal) return message.reply('❌ Karargâh telsiz hattı şu an kapalı. (Bot kanalı göremiyor)');
 
         const embed = new EmbedBuilder()
            .setColor(0x00FF00)
            .setTitle('📻 Yeni Telsiz Mesajı (DM)')
-           .setDescription(message.content || '*(İçerik yok)*')
+           .setDescription(message.content || '[İçerik yok veya sadece görsel]')
            .addFields({ name: 'Gönderen Asker', value: message.author.tag })
            .setFooter({ text: 'Yanıtlamak için /telsiz_yanit komutunu kullanın' })
            .setTimestamp();
