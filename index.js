@@ -458,29 +458,68 @@ if (interaction.commandName === 'hakkında') {
 
 });
 
-// Otomatik Cevap Sistemi
+// --- RIMURU: ASAYİŞ VE OTOMATİK CEVAP SİSTEMİ ---
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
+
     const msg = message.content.toLowerCase();
-    
+
+    // 1. Reklam ve Link Koruması
+    const reklamlar = ["discord.gg", "discord.com/invite", "t.me", "http://", "https://"];
+    if (reklamlar.some(kelime => msg.includes(kelime))) {
+        // Eğer yöneticiyse link atmasına izin ver
+        if (message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
+        
+        try {
+            await message.delete();
+            const uyari = await message.channel.send(`⚠️ ${message.author}, Karargâhta izinsiz link/reklam paylaşımı yasaktır!`);
+            setTimeout(() => uyari.delete().catch(()=>{}), 5000);
+            return;
+        } catch(e) {}
+    }
+
+    // 2. Küfür ve Argo Koruması
+    const kufurler = ["amk", "aq", "orospu", "piç", "siktir", "yavşak", "pezevenk"];
+    const kelimeler = msg.split(/\s+/);
+
+    if (kelimeler.some(kelime => kufurler.includes(kelime))) {
+        try {
+            await message.delete();
+            const uyari = await message.channel.send(`🛡️ ${message.author}, Askeri nizamda bu tarz kelimeler (küfür/argo) kullanılamaz!`);
+            setTimeout(() => uyari.delete().catch(()=>{}), 5000);
+            return;
+        } catch(e) {}
+    }
+
+    // 3. Mevcut Otomatik Cevaplar
     if (responses[msg]) {
         const embed = new EmbedBuilder()
-            .setColor(0x0099FF)
-            .setDescription(responses[msg]);
+           .setColor(0x0099FF)
+           .setDescription(responses[msg]);
         return message.reply({ embeds: [embed] });
     }
 });
 
-// Yeni biri katıldığında
-client.on('guildMemberAdd', member => {
+// --- OTOROL VE KARŞILAMA SİSTEMİ ---
+client.on('guildMemberAdd', async member => {
+    // 1. Otorol Verme
+    const otorolId = "1465659042356531312"; // @✒️ ∙ Kayıtsız rolünün ID'si
+    try {
+        const rol = member.guild.roles.cache.get(otorolId);
+        if (rol) await member.roles.add(rol);
+    } catch (error) {
+        console.log("Otorol verilemedi, yetkim yetersiz olabilir.");
+    }
+
+    // 2. Karşılama Mesajı
     const kanal = member.guild.channels.cache.find(ch => ch.name === 'gelen-giden'); 
     if (!kanal) return;
 
     const hosgeldinEmbed = new EmbedBuilder()
-        .setColor(0x0099FF) // Göktürk Mavisi
-        .setTitle('🐺 Karargâha Yeni Bir Kan Katıldı!')
-        .setDescription(`Hoş geldin ${member}! Göktürk Ordusu saflarına katıldığın için gururluyuz. Kuralları okumayı unutma!`)
-        .setThumbnail(member.user.displayAvatarURL());
+       .setColor(0x0099FF)
+       .setTitle('🐺 Karargâha Yeni Bir Kan Katıldı!')
+       .setDescription(`Hoş geldin ${member}! Göktürk Ordusu saflarına katıldığın için gururluyuz.\n\n🛡️ Otomatik olarak askeri rütben tahsis edilmiştir. Kuralları okumayı unutma!`)
+       .setThumbnail(member.user.displayAvatarURL());
 
     kanal.send({ embeds: [hosgeldinEmbed] });
 });
@@ -523,3 +562,14 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 });
 
 client.login(process.env.TOKEN);
+
+// --- TFAGaming: ANTI-CRASH (ÇÖKME KORUMASI) SİSTEMİ ---
+process.on('unhandledRejection', (reason, p) => {
+    console.log(' [Anti-Crash] Beklenmeyen Hata (Unhandled Rejection):', reason);
+});
+process.on('uncaughtException', (err, origin) => {
+    console.log(' [Anti-Crash] Yakalanmayan Hata (Uncaught Exception):', err);
+});
+process.on('uncaughtExceptionMonitor', (err, origin) => {
+    console.log(' [Anti-Crash] Hata Monitörü:', err);
+});
