@@ -516,16 +516,45 @@ client.on('messageCreate', async message => {
         return message.reply('✅ Mesajınız Karargâha iletildi. Lütfen telsiz başında beklemede kalın.');
     }
 
-    // 2. Reklam ve Link Koruması (Sadece sunucuda çalışır)
+    // 2. Reklam ve Link Koruması (Gelişmiş Whitelist Sistemi)
     const msg = message.content.toLowerCase();
-    const reklamlar = ["discord.gg", "discord.com/invite", "t.me", "http://", "https://"];
+    const kelimeler = msg.split(/\s+/); // Mesajı boşluklardan kelime kelime ayırır
 
-    if (reklamlar.some(kelime => msg.includes(kelime))) {
+    const reklamTetikleyiciler = ["discord.gg", "discord.com/invite", "t.me", "http://", "https://"];
+    const izinliDomainler = [
+        "discord.com/channels",   // Sunucu içi kanal linkleri
+        "youtube.com",
+        "youtu.be",
+        "roblox.com",
+        "roblox.com/users/", // Roblox kullanıcı profilleri
+        // Buraya yeni domain ekleyebilirsiniz: "example.com"
+    ];
+
+    let zararliLinkBulundu = false;
+
+    // Mesajdaki her kelimeyi tek tek incele
+    for (const kelime of kelimeler) {
+        // Bu kelime bir link veya davet içeriyor mu?
+        const linkMi = reklamTetikleyiciler.some(tetikleyici => kelime.includes(tetikleyici));
+
+        if (linkMi) {
+            // Link ise, izin verilen domainlerden birini içeriyor mu?
+            const guvenliMi = izinliDomainler.some(domain => kelime.includes(domain));
+
+            // Eğer link var ama güvenli listesinde HİÇBİRİYLE eşleşmiyorsa, yakala!
+            if (!guvenliMi) {
+                zararliLinkBulundu = true;
+                break; // Bir tane bile zararlı bulsak silmek için yeterli, aramayı durdur.
+            }
+        }
+    }
+
+    if (zararliLinkBulundu) {
         if (message.member && message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
 
         try {
             await message.delete();
-            const uyari = await message.channel.send(`⚠️ ${message.author}, Karargâhta izinsiz link/reklam paylaşımı yasaktır!`);
+            const uyari = await message.channel.send(`⚠️ ${message.author}, Karargâhta sadece onaylı bağlantılar (YouTube, Roblox vb.) paylaşılabilir!`);
             setTimeout(() => uyari.delete().catch(()=>{}), 5000);
             return;
         } catch(e) {}
@@ -533,7 +562,6 @@ client.on('messageCreate', async message => {
 
     // 3. Küfür ve Argo Koruması
     const kufurler = ["amk", "aq", "orospu", "piç", "siktir", "yavşak", "pezevenk"];
-    const kelimeler = msg.split(/\s+/);
 
     if (kelimeler.some(kelime => kufurler.includes(kelime))) {
         try {
