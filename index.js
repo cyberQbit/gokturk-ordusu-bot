@@ -372,34 +372,25 @@ client.on('interactionCreate', async interaction => {
                     ]
                 });
             } catch (err) {
-                islemBekleyenler.delete(uye.id); // Hata olursa kilidi aç
-                console.error('Kanal açılamadı:', err);
-                return interaction.reply({ content: '🚨 **KARARGÂH SINIRI:** Sunucuda maksimum kanal sayısına (500) ulaşılmış olabilir veya yetkim eksik!', ephemeral: true });
+                islemBekleyenler.delete(uye.id);
+                return interaction.reply({ content: '🚨 **KARARGÂH SINIRI:** Sunucuda maksimum kanal sayısına ulaşıldı veya yetkim eksik!', ephemeral: true });
             }
 
-            // Odayı başarıyla açtık
             ozelOdalar.set(yeniOda.id, uye.id);
             islemBekleyenler.delete(uye.id); // Kalkan kilidini kaldır
-            await interaction.reply({ content: `✅ Odanız açıldı: ${yeniOda}`, ephemeral: true });
-            
-            // 3. KALKAN: ÇÖPÇÜ ZAMANLAYICISI (DÜZELTİLMİŞ)
+
+            // 🎯 KRİTİK DÜZELTME 1: Sayacı seni odaya TAŞIMADAN ÖNCE kuruyoruz!
             const bosOdaTimer = setTimeout(async () => {
                 try {
-                    // SADECE CACHE'E BAKMA, KANALI DİSCORD'DAN CANLI OLARAK ÇEK! (Sorunu çözen satır burası)
-                    const guncelKanal = await interaction.guild.channels.fetch(yeniOda.id, { force: true }).catch(() => null);
-                    
-                    // Kanal hala var mı ve İÇİ GERÇEKTEN BOŞ MU?
-                    if (guncelKanal && guncelKanal.members.size === 0) {
-                        await guncelKanal.delete();
+                    const kanal = client.channels.cache.get(yeniOda.id);
+                    if (kanal && kanal.members.size === 0) {
+                        await kanal.delete().catch(()=>{});
                         ozelOdalar.delete(yeniOda.id);
                         odaTimerlar.delete(yeniOda.id);
-                        console.log(`🗑️ Boş oda silindi (120 sn doldu): ${guncelKanal.name}`);
+                        console.log(`🗑️ İlk açılışta boş kalan oda silindi: ${yeniOda.name}`);
                     }
-                } catch (e) {
-                    console.error('Boş oda silinemedi:', e);
-                }
-            }, 60000); // Süreyi 60 saniye olarak ayarlamışsın, istersen 120000 (2dk) yapabilirsin.
-            
+                } catch (e) {}
+            }, 60000); 
             odaTimerlar.set(yeniOda.id, bosOdaTimer);
 
             const panelEmbed = new EmbedBuilder()
@@ -416,6 +407,7 @@ client.on('interactionCreate', async interaction => {
 
             await yeniOda.send({ content: `${uye}`, embeds: [panelEmbed], components: [panelButonlar] });
             
+            // 🎯 ŞİMDİ SENİ TAŞIYORUZ: Böylece "Giriş yaptı" kalkanı tetiklendiğinde sayaç zaten kurulu olacak ve iptal edilecek!
             try { if (uye.voice.channel) await uye.voice.setChannel(yeniOda); } catch(e) {}
             return interaction.reply({ content: `✅ Odanız oluşturuldu! Katılın: ${yeniOda}`, ephemeral: true });
         }
@@ -641,7 +633,7 @@ client.on('channelDelete', channel => {
     }
 });
 
-// 2. KALKAN: SES KANALI GİRİŞ/ÇIKIŞ TAKİBİ (Sesten atma sorununu çözer)
+// 2. KALKAN: SES KANALI GİRİŞ/ÇIKIŞ TAKİBİ
 client.on('voiceStateUpdate', async (oldState, newState) => {
     const eskiKanal = oldState.channel;
     const yeniKanal = newState.channel;
@@ -654,7 +646,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
         }
     }
 
-    // DURUM B: Biri odadan ÇIKTI -> Oda tamamen boşsa 60 saniyelik imha sayacını BAŞLAT!
+    // DURUM B: Biri odadan ÇIKTI -> Oda tamamen boşsa çöpçü sayacını BAŞLAT!
     if (eskiKanal && ozelOdalar.has(eskiKanal.id)) {
         if (eskiKanal.members.size === 0) {
             // Eski çalışan bir sayaç varsa sıfırla
@@ -662,14 +654,15 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
                 clearTimeout(odaTimerlar.get(eskiKanal.id));
             }
             
-            // Yeni 60 saniyelik (60000 ms) çöpçü sayacını kur
+            // Yeni 60 saniyelik çöpçü sayacını kur
             const timer = setTimeout(async () => {
                 try {
-                    // İşlem öncesi kanalı Discord'dan taze olarak çekip (fetch) teyit et
-                    const silinecekKanal = await client.channels.fetch(eskiKanal.id).catch(() => null);
-                    // Kanal hala duruyorsa ve gerçekten boşsa sil
+                    // 🎯 KRİTİK DÜZELTME 2: Fetch kullanmıyoruz. Cache her zaman güvenlidir ve anlık seste olanları görür.
+                    const silinecekKanal = client.channels.cache.get(eskiKanal.id);
+                    
+                    // Kanal hala duruyorsa ve İÇİ GERÇEKTEN BOŞSA sil
                     if (silinecekKanal && silinecekKanal.members.size === 0) {
-                        await silinecekKanal.delete();
+                        await silinecekKanal.delete().catch(()=>{});
                         ozelOdalar.delete(eskiKanal.id);
                         odaTimerlar.delete(eskiKanal.id);
                         console.log(`🗑️ Boş oda otomatik silindi: ${eskiKanal.name}`);
