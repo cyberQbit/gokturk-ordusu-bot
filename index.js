@@ -20,6 +20,7 @@ const client = new Client({
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildVoiceStates, // 👁️ BOTUN SESTE KİM OLDUĞUNU GÖRMESİNİ SAĞLAYAN GÖZLÜK!
     ],
     partials: [Partials.Channel, Partials.Message],
 });
