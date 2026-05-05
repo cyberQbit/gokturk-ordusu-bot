@@ -382,20 +382,25 @@ client.on('interactionCreate', async interaction => {
             islemBekleyenler.delete(uye.id); // Kalkan kilidini kaldır
             await interaction.reply({ content: `✅ Odanız açıldı: ${yeniOda}`, ephemeral: true });
             
-            // 3. KALKAN: İLK OLUŞTURMA SAYACI (Sadece odayı açıp 1dk boyunca girmeyenler için)
-            const timer = setTimeout(async () => {
+            // 3. KALKAN: ÇÖPÇÜ ZAMANLAYICISI (DÜZELTİLMİŞ)
+            const bosOdaTimer = setTimeout(async () => {
                 try {
-                    // Kanalı güncel olarak denetle
-                    const ch = await client.channels.fetch(yeniOda.id).catch(() => null);
-                    if (ch && ch.members.size === 0) {
-                        await ch.delete().catch(()=>{});
+                    // SADECE CACHE'E BAKMA, KANALI DİSCORD'DAN CANLI OLARAK ÇEK! (Sorunu çözen satır burası)
+                    const guncelKanal = await interaction.guild.channels.fetch(yeniOda.id, { force: true }).catch(() => null);
+                    
+                    // Kanal hala var mı ve İÇİ GERÇEKTEN BOŞ MU?
+                    if (guncelKanal && guncelKanal.members.size === 0) {
+                        await guncelKanal.delete();
                         ozelOdalar.delete(yeniOda.id);
                         odaTimerlar.delete(yeniOda.id);
+                        console.log(`🗑️ Boş oda silindi (120 sn doldu): ${guncelKanal.name}`);
                     }
-                } catch (e) {}
-            }, 60000); // 1 dakika
+                } catch (e) {
+                    console.error('Boş oda silinemedi:', e);
+                }
+            }, 60000); // Süreyi 60 saniye olarak ayarlamışsın, istersen 120000 (2dk) yapabilirsin.
             
-            odaTimerlar.set(yeniOda.id, timer);
+            odaTimerlar.set(yeniOda.id, bosOdaTimer);
 
             const panelEmbed = new EmbedBuilder()
                 .setTitle('🎛️ Oda Kontrol Paneli')
