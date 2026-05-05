@@ -2,6 +2,7 @@ const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST,
 require('dotenv').config();
 const fs = require('fs');
 
+const ANA_SUNUCU_ID = "1249856622470365276"; // Göktürk Ordusu sunucu ID'si
 const ozelOdalar = new Map(); // Hangi odayı kimin açtığını aklında tutar
 const odaTimerlar = new Map();
 const islemBekleyenler = new Set(); // Butona art arda spam basmayı engeller
@@ -490,30 +491,45 @@ client.on('messageCreate', async message => {
 
     // 1. TELSİZ (MODMAIL) SİSTEMİ - Eğer mesaj DM'den geliyorsa
     if (!message.guild) {
-        const sunucuId = "1249856622470365276"; // Göktürk Ordusu sunucu ID'si
-        const guild = client.guilds.cache.get(sunucuId);
-        if (!guild) return;
+        const sunucu = client.guilds.cache.get(ANA_SUNUCU_ID);
+        if (!sunucu) return console.log("HATA: Sunucu ID'si yanlış veya bot sunucuda değil!");
 
-        const telsizKanal = guild.channels.cache.find(c => c.name === 'telsiz-komuta');
-        if (!telsizKanal) return message.reply('❌ Karargâh telsiz hattı şu an kapalı. (Bot kanalı göremiyor)');
+        const kategori = sunucu.channels.cache.find(c => c.name === 'TELSİZ HATTI' && c.type === ChannelType.GuildCategory);
+        let kanal = sunucu.channels.cache.find(c => c.name === `telsiz-${message.author.id}`);
 
-        const embed = new EmbedBuilder()
-           .setColor(0x00FF00)
-           .setTitle('📻 Yeni Telsiz Mesajı (DM)')
-           .setDescription(message.content || '[İçerik yok veya sadece görsel]')
-           .addFields({ name: 'Gönderen Asker', value: message.author.tag })
-           .setFooter({ text: 'Yanıtlamak için /telsiz_yanit komutunu kullanın' })
-           .setTimestamp();
-
-        if (message.attachments.size > 0) {
-            embed.setImage(message.attachments.first().url);
+        // KRİTİK GÜVENLİK YAMASI: Kanal cache'te görünse bile gerçekten Discord'da var mı?
+        if (kanal) {
+            try {
+                await client.channels.fetch(kanal.id);
+            } catch (error) {
+                sunucu.channels.cache.delete(kanal.id);
+                kanal = null;
+            }
         }
 
-        await telsizKanal.send({
-            content: `🔔 **YENİ BAĞLANTI:** <@${message.author.id}> telsizden ulaştı!\n**Kişi ID (Kopyala):** \`${message.author.id}\``,
-            embeds: [embed]
-        });
-        return message.reply('✅ Mesajınız Karargâha iletildi. Lütfen telsiz başında beklemede kalın.');
+        if (!kanal) {
+            try {
+                kanal = await sunucu.channels.create({
+                    name: `telsiz-${message.author.id}`,
+                    type: ChannelType.GuildText,
+                    parent: kategori ? kategori.id : null,
+                    topic: `${message.author.tag} personeli ile telsiz hattı.`
+                });
+                await kanal.send(`🚨 **Yeni Telsiz Bağlantısı Kuruldu!**\n**Personel:** ${message.author}\n**Mesaj:** ${message.content}`);
+                return message.reply("📡 **Bağlantı Kuruldu.** Mesajınız Karargâh'a iletildi.");
+            } catch (err) {
+                console.error("Telsiz kanalı açılamadı:", err);
+                return message.reply("❌ Karargâh ile telsiz bağlantısı kurulamadı. (Yetki veya limit sorunu olabilir)");
+            }
+        }
+
+        try {
+            await kanal.send(`🗨️ **[PERSONEL]:** ${message.content}`);
+        } catch (err) {
+            console.error("Telsiz mesajı iletilemedi:", err);
+            return message.reply("❌ Mesajınız iletilemedi. Karargâh telsiz hattında geçici bir arıza var.");
+        }
+        return;
     }
 
     // 2. Reklam ve Link Koruması (Gelişmiş Whitelist Sistemi)
