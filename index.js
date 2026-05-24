@@ -2,6 +2,24 @@ const { Client, GatewayIntentBits, Collection, ActivityType, EmbedBuilder, REST,
 require('dotenv').config();
 const fs = require('fs');
 
+// Config yükleme ve yönetimi
+let config = { kufurFiltresi: true };
+if (fs.existsSync('./config.json')) {
+    try {
+        config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+    } catch (err) {
+        console.error("Config dosyası okunamadı, varsayılan ayarlar kullanılıyor:", err);
+    }
+}
+
+function saveConfig() {
+    try {
+        fs.writeFileSync('./config.json', JSON.stringify(config, null, 4));
+    } catch (err) {
+        console.error("Config dosyası kaydedilemedi:", err);
+    }
+}
+
 const ANA_SUNUCU_ID = "1249856622470365276"; // Göktürk Ordusu sunucu ID'si
 const ozelOdalar = new Map(); // Hangi odayı kimin açtığını aklında tutar
 const odaTimerlar = new Map();
@@ -91,6 +109,19 @@ client.once('ready', async () => {
             .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
             .addStringOption(option => option.setName('hedef_id').setDescription('Yanıt verilecek askerin ID\'si (telsiz kanalından kopyala)').setRequired(true))
             .addStringOption(option => option.setName('mesaj').setDescription('Gönderilecek yanıt mesajı').setRequired(true)),
+
+        new SlashCommandBuilder()
+            .setName('asayiş-filtresi')
+            .setDescription('Küfür ve argo filtresini açar veya kapatır.')
+            .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+            .addStringOption(option => 
+                option.setName('durum')
+                .setDescription('Filtrenin durumu')
+                .setRequired(true)
+                .addChoices(
+                    { name: 'Açık', value: 'acik' },
+                    { name: 'Kapalı', value: 'kapali' }
+                )),
     ].map(command => command.toJSON());
 
     const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
@@ -483,6 +514,21 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
+    // --- ASAYİŞ FİLTRESİ KOMUTU HANDLER ---
+    if (interaction.isChatInputCommand() && interaction.commandName === 'asayiş-filtresi') {
+        const durum = interaction.options.getString('durum');
+        
+        if (durum === 'acik') {
+            config.kufurFiltresi = true;
+            saveConfig();
+            return interaction.reply({ content: '🛡️ **Asayiş Filtresi aktif edildi.** Artık küfür ve argo kelimeler engellenecek.', ephemeral: true });
+        } else {
+            config.kufurFiltresi = false;
+            saveConfig();
+            return interaction.reply({ content: '⚠️ **Asayiş Filtresi kapatıldı.** Küfür ve argo kelimeler artık engellenmeyecek.', ephemeral: true });
+        }
+    }
+
 });
 
 // --- ASAYİŞ, TELSİZ VE OTOMATİK CEVAP SİSTEMİ ---
@@ -577,15 +623,17 @@ client.on('messageCreate', async message => {
     }
 
     // 3. Küfür ve Argo Koruması
-    const kufurler = ["amk", "aq", "orospu", "piç", "siktir", "yavşak", "pezevenk"];
+    if (config.kufurFiltresi) {
+        const kufurler = ["amk", "aq", "orospu", "piç", "siktir", "yavşak", "pezevenk"];
 
-    if (kelimeler.some(kelime => kufurler.includes(kelime))) {
-        try {
-            await message.delete();
-            const uyari = await message.channel.send(`🛡️ ${message.author}, Askeri nizamda bu tarz kelimeler (küfür/argo) kullanılamaz!`);
-            setTimeout(() => uyari.delete().catch(()=>{}), 5000);
-            return;
-        } catch(e) {}
+        if (kelimeler.some(kelime => kufurler.includes(kelime))) {
+            try {
+                await message.delete();
+                const uyari = await message.channel.send(`🛡️ ${message.author}, Askeri nizamda bu tarz kelimeler (küfür/argo) kullanılamaz!`);
+                setTimeout(() => uyari.delete().catch(()=>{}), 5000);
+                return;
+            } catch(e) {}
+        }
     }
 
     // 4. Mevcut Otomatik Cevaplar
